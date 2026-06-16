@@ -368,8 +368,16 @@ continues even if a turn ends. PROGRESS.md is the single source of truth for
 
 ## 12. Blockers / open questions (append-only; the run writes here)
 
-- *(none yet — the autonomous run appends any hard stops here instead of
-  thrashing, so the human can unblock in the morning)*
+- **2026-06-16 — GDSII hardening (§9) GREENLIT mid-run** and being attempted
+  autonomously (was a non-goal). See PROGRESS.md Phase 5.
+- **2026-06-16 — hardening env recon (NOT a blocker; resolved by pivot).**
+  WSL2 Ubuntu-22.04 is present but: (a) `sudo` needs a password → no `apt`
+  installs; (b) Docker Desktop WSL-integration is OFF for that distro → no
+  `librelane --dockerized` from WSL. Internet + repo mount + python3.10/pip are
+  fine. → Pivoted to a Docker `nixos/nix` container (root inside the container
+  can build `/nix`, no host sudo needed). If this rig fails, human fallbacks:
+  §9 Path A (toggle Docker↔WSL integration in Docker Desktop, then `--dockerized`)
+  or §9 Path B (install Nix in WSL via sudo → `nix develop` → `make librelane`).
 
 ### Known non-goals for tonight (do NOT attempt)
 - Running `make librelane` / any GDSII hardening (§9 is human-run).

@@ -85,12 +85,19 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - [ ] 4c  Final verify, push, morning report
 
 ## Phase 5 — GDSII hardening (§9, greenlit mid-run) — attempt autonomously
-- [ ] 5a  Bootstrap hardening env in WSL2 Ubuntu-22.04: librelane + ciel
-          (pip or nix). Verify: `librelane --version` runs.
-- [ ] 5b  `make clone-pdk` (ciel fetches gf180mcuD PDK, multi-GB) — background.
-          Verify: PDK dir populated.
-- [ ] 5c  `SLOT=1x0p5 make librelane` — RTL→GDSII (slow; background + wakeups).
-          Verify: run completes, `final/` views produced. Blockers → §12.
+Env recon ruled out the WSL path (see §12). **Chosen rig: a long-lived Docker
+container `eurosynth-harden` from `nixos/nix`** (root → can populate `/nix`
+without host sudo), repo bind-mounted at `/work`, PDK on named volume `/pdk`.
+The template `flake.nix` pulls librelane + EDA tools from the fossi-foundation
+nix binary cache (prebuilt, not source-compiled). Commands run via
+`docker exec eurosynth-harden bash -lc 'cd /work && nix develop --accept-flake-config --command bash -lc "SLOT=1x0p5 PDK_ROOT=/pdk make <tgt>"'`.
+- [~] 5a  Materialize librelane devshell (`nix develop`) — IN PROGRESS, background
+          (toolchain download from fossi cache). Verify: `librelane --version`,
+          `make`/`ciel`/`iverilog` on PATH.
+- [ ] 5b  `SLOT=1x0p5 PDK_ROOT=/pdk make clone-pdk` (ciel fetches gf180mcuD PDK,
+          multi-GB) — background. Verify: PDK dir populated.
+- [ ] 5c  `SLOT=1x0p5 PDK_ROOT=/pdk make librelane` — RTL→GDSII (slow; background
+          + wakeups). Verify: run completes, `final/` views produced. → §12.
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)

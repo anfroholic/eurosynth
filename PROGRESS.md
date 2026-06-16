@@ -5,10 +5,11 @@ work. See [PLAN.md](PLAN.md) §5 for the chunk definitions and §11 for resume.
 
 Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` blocked
 
-## Phase 0 — De-risk & baseline
-- [~] 0a  Build `eurosynth-sim` Docker image
-- [ ] 0b  Spine TB runs green in container ("SPINE OK")
-- [ ] 0c  Commit baseline + scaffold, branch, push to origin
+## Phase 0 — De-risk & baseline  ✅ DONE (human awake)
+- [x] 0a  Build `eurosynth-sim` Docker image — Icarus 11.0 confirmed in-container
+- [x] 0b  Spine TB green in container — 21 frames, 0 mismatches ("SPINE OK")
+- [x] 0c  Baseline on `main` (f861ae0) + scaffold on `overnight/karplus-strong`
+          (8ce8bfe); both pushed to origin. `git push` credentials proven.
 
 ## Phase 1 — Template integration
 - [ ] 1a  Recon: clone template, report core/ports/VERILOG_FILES/chip_top wiring
@@ -31,7 +32,8 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - [ ] 4c  Final verify, push, morning report
 
 ## Commit log (chunk → hash)
-_(appended as chunks land)_
+- baseline → f861ae0 (main)
+- phase0/scaffold → 8ce8bfe
 
 ## Morning report
 _(written by the final chunk)_

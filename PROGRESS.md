@@ -96,11 +96,14 @@ nix binary cache (prebuilt, not source-compiled). Commands run via
 - [x] 5a  Materialized librelane devshell (`nix develop`, ~7.4 GB nix closure
           from fossi cache, no source builds). **LibreLane v3.1.0.dev1**;
           `librelane`/`make`/`ciel`/`iverilog` all on PATH. ✅
-- [~] 5b  `SLOT=1x0p5 PDK_ROOT=/pdk make clone-pdk` — IN PROGRESS, background
-          (ciel downloading gf180mcuD @ f6bfbd4 into /pdk volume; 171 GB free).
-          Verify: PDK dir populated.
-- [ ] 5c  `SLOT=1x0p5 PDK_ROOT=/pdk make librelane` — RTL→GDSII (slow; background
-          + wakeups). Verify: run completes, `final/` views produced. → §12.
+- [x] 5b  PDK fetched (gf180mcuD @ f6bfbd4, 4.0 GB at `/pdk/ciel/...`). First
+          ciel attempt timed out mid-download (transient); a retry loop got a
+          clean download on the next attempt. ✅
+- [~] 5c  `SLOT=1x0p5 PDK_ROOT=/pdk make librelane` — IN PROGRESS, background
+          (runs from container-local `/build` copy to dodge slow Windows
+          bind-mount PnR I/O). Synthesis confirmed underway (yosys on the KS
+          `line[]` 16 Kbit inferred memory). Verify: run completes, `final/`
+          GDS views produced. Results/blockers → here + §12.
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)

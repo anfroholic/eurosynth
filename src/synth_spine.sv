@@ -26,8 +26,12 @@ module synth_spine #(
     input  wire rst_n,                 // active low
 
     // --- control (v0: straight from pins; SPI config comes later) ---
-    input  wire [2:0] voice_sel,       // 0=bypass ramp, 1=saw, 2=square, 3=silence
+    input  wire [2:0] voice_sel,       // 0=bypass ramp, 1=saw, 2=square, 3=silence, 4=Karplus-Strong pluck
     input  wire       bypass_en,       // force the test ramp regardless of voice_sel
+
+    // --- Karplus-Strong control (voice 4) ---
+    input  wire       ks_pluck,        // 1-clk strobe: (re)excite the string
+    input  wire [9:0] ks_period,       // delay-line length (valid 2..1023)
 
     // --- I2S-style serial audio output (to an external DAC) ---
     output wire i2s_bclk,
@@ -132,6 +136,15 @@ module synth_spine #(
     end
     wire signed [15:0] osc_sq = sq_phase[15] ? 16'sh7FFF : -16'sh8000;
 
+    // Voice 4: Karplus-Strong plucked-string engine (advances on sample_tick).
+    wire signed [15:0] ks_sample;
+    ks_engine u_ks (
+        .clk(clk), .rst_n(rst_n),
+        .sample_tick(sample_tick),
+        .pluck(ks_pluck), .period(ks_period),
+        .sample(ks_sample)
+    );
+
     // ---------------------------------------------------------------------
     // Voice-select mux: ONE source reaches the output at a time.
     // ---------------------------------------------------------------------
@@ -141,6 +154,7 @@ module synth_spine #(
             3'd0:    sel_sample = ramp;
             3'd1:    sel_sample = osc_saw;
             3'd2:    sel_sample = osc_sq;
+            3'd4:    sel_sample = ks_sample;
             default: sel_sample = 16'sd0;   // silence
         endcase
     end

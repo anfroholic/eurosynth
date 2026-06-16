@@ -17,6 +17,8 @@ module tb_synth_spine;
     reg rst_n = 1'b0;
     reg [2:0] voice_sel = 3'd0;
     reg bypass_en = 1'b1;
+    reg ks_pluck = 1'b0;
+    reg [9:0] ks_period = 10'd16;
 
     wire i2s_bclk, i2s_ws, i2s_sd, heartbeat, sample_tick;
     wire signed [SAMPLE_W-1:0] sample_dbg;
@@ -24,6 +26,7 @@ module tb_synth_spine;
     synth_spine #(.SAMPLE_W(SAMPLE_W), .BCLK_DIV(BCLK_DIV)) dut (
         .clk(clk), .rst_n(rst_n),
         .voice_sel(voice_sel), .bypass_en(bypass_en),
+        .ks_pluck(ks_pluck), .ks_period(ks_period),
         .i2s_bclk(i2s_bclk), .i2s_ws(i2s_ws), .i2s_sd(i2s_sd),
         .sample_tick(sample_tick), .sample_dbg(sample_dbg),
         .heartbeat(heartbeat)
@@ -38,6 +41,7 @@ module tb_synth_spine;
     reg        ws_seen = 1'b1;
 
     integer checks = 0, fails = 0;
+    reg ks_nonzero = 1'b0;   // set if any KS-voice (voice_sel==4) frame decodes non-zero
 
     always @(posedge clk) begin
         bclk_d <= i2s_bclk;
@@ -49,6 +53,7 @@ module tb_synth_spine;
         ws_seen <= i2s_ws;
         if (ws_seen == 1'b0 && i2s_ws == 1'b1 && rst_n) begin
             checks = checks + 1;
+            if (voice_sel == 3'd4 && rx_acc !== 0) ks_nonzero <= 1'b1;
             if (rx_acc === sample_dbg) begin
                 $display("  frame %0d: DAC decoded %0d  (intended %0d)  OK",
                          checks, rx_acc, sample_dbg);
@@ -83,6 +88,18 @@ module tb_synth_spine;
         $display("\n[4] Voice 3 = silence (unused engine slot):");
         voice_sel = 3'd3;
         wait_frames(4);
+
+        $display("\n[5] Voice 4 = Karplus-Strong (pluck then select):");
+        ks_period = 10'd16;
+        @(posedge clk); ks_pluck = 1'b1; @(posedge clk); ks_pluck = 1'b0;
+        bypass_en = 1'b0; voice_sel = 3'd4;
+        wait_frames(6);
+        if (!ks_nonzero) begin
+            fails = fails + 1;
+            $display("  [5] FAIL: KS voice produced only silence (ks_nonzero never set)");
+        end else begin
+            $display("  [5] OK: KS voice reached the serializer with non-zero output");
+        end
 
         $display("\n==== %0d frames checked, %0d mismatches ====", checks, fails);
         if (fails == 0) $display("==== SPINE OK: every decoded sample matched ====\n");

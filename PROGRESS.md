@@ -37,9 +37,12 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
           design was correct.) ✅ **Karplus-Strong engine is bit-exact verified.**
 
 ## Phase 3 — Spine integration + regression
-- [ ] 3a  Instantiate `ks_engine` in `src/synth_spine.sv`, add mux case `3'd4`,
-          feed it `sample_tick`. Verify: spine TB still "SPINE OK" + KS voice
-          reaches serializer.
+- [x] 3a  Instantiate `ks_engine` in `src/synth_spine.sv` (new spine ports
+          `ks_pluck`/`ks_period[9:0]`), add mux case `3'd4`, feed it
+          `sample_tick`. TB phase [5] plucks then selects voice 4. **Verified
+          (main, in-container): SPINE OK, 27 frames, 0 mismatches; phases
+          [1]–[4] unchanged; voice-4 round-trip decoded -7568 (== KS golden
+          first sample), `ks_nonzero` guard proves the voice is non-silent.** ✅
 - [ ] 3b  `chip_core` 1x0p5 pin-map redesign: input_in[3:0] = voice_sel+bypass_en;
           per-bit `bidir_oe`/`bidir_ie` so chosen bidir pads are INPUTS for
           `pluck`/`period`; i2s+heartbeat+tick+sample_dbg on output bidir pads.
@@ -62,6 +65,11 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - phase0/scaffold → 8ce8bfe
 - phase0 mark done → c99514b
 - phase1a/layout → ea1880a
+- phase2a/spec+model+golden → 02fac94
+- phase2c/ks_engine RTL → 890962f
+- phase2d/ks golden TB → a2c7021
+- docs/retarget PLAN to 1x0p5 → 7ae45ac
+- phase3a/wire-in (KS into spine) → (this commit)
 
 ## Morning report
 _(written by the final chunk)_

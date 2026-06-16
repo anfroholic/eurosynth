@@ -31,10 +31,10 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - [x] 2a  Spec `docs/karplus_strong.md` + bit-exact model `models/ks_ref.py`
           (ports match contract). Verified in-container: deterministic, 256-line
           `models/ks_golden.hex`; first sample -7568 == 0xe270. ✅
-- [x] 2c  RTL `src/ks_engine.sv` — elaborates clean (-g2012 -Wall, exit 0). Agent
-          elaborates clean under iverilog `-g2012` (no latches/width errors).
-- [ ] 2d  TB `tb/tb_ks_engine.sv` self-checks vs `models/ks_golden.hex` via
-          `$readmemh`, period=48, 256 samples, **0 mismatches**.
+- [x] 2c  RTL `src/ks_engine.sv` — elaborates clean (-g2012 -Wall, exit 0).
+- [x] 2d  TB `tb/tb_ks_engine.sv` — **KS OK: 256/256 samples matched golden,
+          0 mismatches.** (Main caught + fixed a clock-edge race in the TB strobe;
+          design was correct.) ✅ **Karplus-Strong engine is bit-exact verified.**
 
 ## Phase 3 — Spine integration + regression
 - [ ] 3a  Instantiate `ks_engine` in `src/synth_spine.sv`, add mux case `3'd4`,

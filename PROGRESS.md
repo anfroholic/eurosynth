@@ -31,7 +31,7 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - [x] 2a  Spec `docs/karplus_strong.md` + bit-exact model `models/ks_ref.py`
           (ports match contract). Verified in-container: deterministic, 256-line
           `models/ks_golden.hex`; first sample -7568 == 0xe270. ✅
-- [ ] 2c  RTL `src/ks_engine.sv` implementing the spec's exact integer math;
+- [x] 2c  RTL `src/ks_engine.sv` — elaborates clean (-g2012 -Wall, exit 0). Agent
           elaborates clean under iverilog `-g2012` (no latches/width errors).
 - [ ] 2d  TB `tb/tb_ks_engine.sv` self-checks vs `models/ks_golden.hex` via
           `$readmemh`, period=48, 256 samples, **0 mismatches**.

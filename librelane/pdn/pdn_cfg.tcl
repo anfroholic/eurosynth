@@ -202,16 +202,9 @@ add_pdn_connect \
     -grid macro \
     -layers "$::env(PDN_VERTICAL_LAYER) $::env(PDN_HORIZONTAL_LAYER)"
 
-puts "$::env(SRAM_DEFINE)"
-if { [info exists ::env(SRAM_DEFINE)] } {
-    if {$::env(SRAM_DEFINE) == "SRAM_gf180mcu_ocd_ip_sram"} {
-        # Config for 3V3 SRAM
-        source [file join [file dirname [info script]] "pdn_3v3_sram.tcl"]
-    } else {
-        # Config for 5V SRAM
-        source [file join [file dirname [info script]] "pdn_5v_sram.tcl"]
-    }
-} else {
-    # Config for 5V SRAM
-    source [file join [file dirname [info script]] "pdn_5v_sram.tcl"]
-}
+# Eurosynth's chip_core is SRAM-free, so we do NOT source pdn_5v_sram.tcl /
+# pdn_3v3_sram.tcl: those add PDN grids for instances i_chip_core.sram_0 /
+# sram_1, which do not exist here and make OpenROAD.GeneratePDN fail with
+# [PDN-1030] "Unable to find instance". If a future engine instantiates an
+# SRAM macro, restore the conditional source below (and the macro/PDN entries
+# in librelane/macros/macros_*.yaml).

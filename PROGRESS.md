@@ -99,11 +99,16 @@ nix binary cache (prebuilt, not source-compiled). Commands run via
 - [x] 5b  PDK fetched (gf180mcuD @ f6bfbd4, 4.0 GB at `/pdk/ciel/...`). First
           ciel attempt timed out mid-download (transient); a retry loop got a
           clean download on the next attempt. ✅
-- [~] 5c  `SLOT=1x0p5 PDK_ROOT=/pdk make librelane` — IN PROGRESS, background
-          (runs from container-local `/build` copy to dodge slow Windows
-          bind-mount PnR I/O). Synthesis confirmed underway (yosys on the KS
-          `line[]` 16 Kbit inferred memory). Verify: run completes, `final/`
-          GDS views produced. Results/blockers → here + §12.
+- [~] 5c  `make librelane` (from container-local `/build`). **Run 1 reached
+          stage 22/83 then failed: `[PDN-1030] Unable to find instance
+          i_chip_core.sram_0`** — the SRAM removal missed `librelane/pdn/pdn_cfg.tcl`,
+          which unconditionally `source`s `pdn_5v_sram.tcl` (PDN grids for the
+          deleted SRAMs). FIXED: pdn_cfg.tcl no longer sources the SRAM PDN.
+          Timing note: yosys synthesis of the KS 16 Kbit flop `line[]` took ~6 h
+          (steps 1–21 = ~7 h total) — synthesis is the bottleneck (see area
+          caveat; smaller NMAX or SRAM macro would slash this). Re-running via
+          **resume** (`--last-run --from OpenROAD.GeneratePDN`) to skip the 6 h
+          synthesis. IN PROGRESS, background. Verify: `final/` GDS produced.
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)

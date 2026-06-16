@@ -81,7 +81,9 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
           `DESIGN_NAME: chip_top`, clock `clk_PAD`/40ns, SRAM macros removed,
           slot 1x0p5 via `DEFAULT_SLOT` + `slot_defines.svh` (4/46/4). (Inspection,
           not a hardening run.) ✅
-- [ ] 4b  NOTES.md status/roadmap/pin-map updated for 1x0p5 + KS
+- [x] 4b  NOTES.md updated: 1x0p5 pin map (KS pluck/period on bidir inputs),
+          status (KS bit-exact + spine + chip_core all verified), Files table,
+          template-integration marked done, KS = engine #1 done in roadmap. ✅
 - [ ] 4c  Final verify, push, morning report
 
 ## Phase 5 — GDSII hardening (§9, greenlit mid-run) — attempt autonomously

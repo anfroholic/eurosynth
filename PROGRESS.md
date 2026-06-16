@@ -93,11 +93,12 @@ without host sudo), repo bind-mounted at `/work`, PDK on named volume `/pdk`.
 The template `flake.nix` pulls librelane + EDA tools from the fossi-foundation
 nix binary cache (prebuilt, not source-compiled). Commands run via
 `docker exec eurosynth-harden bash -lc 'cd /work && nix develop --accept-flake-config --command bash -lc "SLOT=1x0p5 PDK_ROOT=/pdk make <tgt>"'`.
-- [~] 5a  Materialize librelane devshell (`nix develop`) — IN PROGRESS, background
-          (toolchain download from fossi cache). Verify: `librelane --version`,
-          `make`/`ciel`/`iverilog` on PATH.
-- [ ] 5b  `SLOT=1x0p5 PDK_ROOT=/pdk make clone-pdk` (ciel fetches gf180mcuD PDK,
-          multi-GB) — background. Verify: PDK dir populated.
+- [x] 5a  Materialized librelane devshell (`nix develop`, ~7.4 GB nix closure
+          from fossi cache, no source builds). **LibreLane v3.1.0.dev1**;
+          `librelane`/`make`/`ciel`/`iverilog` all on PATH. ✅
+- [~] 5b  `SLOT=1x0p5 PDK_ROOT=/pdk make clone-pdk` — IN PROGRESS, background
+          (ciel downloading gf180mcuD @ f6bfbd4 into /pdk volume; 171 GB free).
+          Verify: PDK dir populated.
 - [ ] 5c  `SLOT=1x0p5 PDK_ROOT=/pdk make librelane` — RTL→GDSII (slow; background
           + wakeups). Verify: run completes, `final/` views produced. → §12.
 

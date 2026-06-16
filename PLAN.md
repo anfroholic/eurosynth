@@ -5,6 +5,19 @@ written so a fresh Claude session (or you, in the morning) can pick it up cold.
 Read [NOTES.md](NOTES.md) first for *why* the design looks the way it does; this
 file is *how* we build the next piece without a human in the loop.
 
+> ### 📌 Live status & key changes (read before resuming)
+> - **Target slot is `1x0p5`** (half slot), NOT 1x1. Pad budget 4 in / 46 bidir /
+>   4 analog; category split is soft (bidir pads are direction-configurable), only
+>   the ~54-pad total is hard. All build commands use `SLOT=1x0p5`. See
+>   [docs/template_integration.md](docs/template_integration.md).
+> - **[PROGRESS.md](PROGRESS.md) is the live source of truth** for what's done and
+>   the (reordered) execution sequence. As of last update: Phase 0 + the
+>   Karplus-Strong engine (spec, model, RTL, golden TB — **bit-exact, 0
+>   mismatches**) are DONE and pushed. Next: wire KS into the spine + the 1x0p5
+>   `chip_core` pin map (Phase 3), then template import (Phase 1).
+> - **Verification rail:** standalone Icarus only (no PDK). Full `chip_top` cocotb
+>   + `make librelane` GDSII = human PDK session.
+
 ---
 
 ## 0. TL;DR — what the human has to do
@@ -295,11 +308,14 @@ together. Two paths; pick one:
 ### Path A — LibreLane's own Docker mode (matches your Docker preference)
 1. Install LibreLane locally (needs Python): `pip install librelane`
 2. Make sure Docker Desktop is running.
-3. From the repo root, harden the design in a container LibreLane manages:
+3. From the repo root, harden the **1x0p5** design in a container LibreLane
+   manages (run where `make` exists — i.e. WSL2 Ubuntu — since the slot configs
+   are assembled by the Makefile):
    ```bash
-   librelane --dockerized librelane/config.yaml --save-views-to final
+   SLOT=1x0p5 LIBRELANE_OPTS=--dockerized make librelane
    ```
-   The first invocation pulls the toolchain image (large, one-time).
+   The first invocation pulls the toolchain image (large, one-time). `make`
+   auto-runs `clone-pdk` + `defines` first.
 4. Results land in `librelane/runs/<timestamp>/`; final views copy to `final/`.
 
 ### Path B — the template's blessed Nix flow (inside WSL2 Ubuntu)
@@ -308,8 +324,8 @@ The template is built around Nix. If Path A fights you, this is the reference:
    `https://librelane.readthedocs.io/en/latest/installation/nix_installation/`.
 2. `make clone-pdk` (pulls the gf180mcuD PDK via Ciel — multi-GB, one-time).
 3. `nix-shell` (drops you into a shell with the whole toolchain on PATH).
-4. `make librelane` (the actual hardening; the first run is slow).
-5. View results: `make librelane-openroad` or `make librelane-klayout`.
+4. `SLOT=1x0p5 make librelane` (the actual hardening; the first run is slow).
+5. View results: `SLOT=1x0p5 make librelane-openroad` or `... librelane-klayout`.
 
 > Tonight's job is to make sure that when you run this, `librelane/config.yaml`
 > already lists every RTL file and the design elaborates — so the *only* new

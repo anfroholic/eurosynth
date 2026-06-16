@@ -113,8 +113,32 @@ nix binary cache (prebuilt, not source-compiled). Commands run via
           baseline, then ship 256). `period` port decoupled to a fixed `[9:0]`
           (contract) and clamped internally, so the pin map is untouched. Golden
           is **byte-identical** (PGOLDEN=48 ≤ 255). **Verified (main): KS OK /
-          SPINE OK / ELAB OK; `models/ks_golden.hex` unchanged.** ✅ Hardens far
-          faster (4 Kbit vs 16 Kbit). To be hardened once the 1024 baseline ends.
+          SPINE OK / ELAB OK; `models/ks_golden.hex` unchanged.** ✅ (commit 9a4cc62)
+- [~] 5e  Harden the lean 256 design — RUNNING in parallel with the 1024 baseline
+          (48 cores / 30 GB free, no contention). Verify: `final/` GDS produced.
+
+### ⏳ HARDENING IN FLIGHT — how to resume on a fresh session (as of 2026-06-16 ~22:40 UTC)
+Rig: long-lived Docker container **`eurosynth-harden`** (`nixos/nix`; `/nix` has
+LibreLane v3.1.0.dev1 + tools). Mounts: `/work`=repo, `/pdk`=gf180mcuD PDK volume.
+Run hardening as: `docker exec eurosynth-harden bash -lc 'cd <DIR> && nix develop --accept-flake-config --command bash -lc "SLOT=1x0p5 PDK_ROOT=/pdk make librelane"'`.
+
+TWO runs in flight (heavy steps run detached inside the container):
+| run | RTL | work dir | run dir | log | bg task |
+|---|---|---|---|---|---|
+| **1024 baseline** | older 1024 (commit a30de83) | `/build` | `/build/librelane/runs/RUN_2026-06-16_15-04-43` | `/root/resume.log` | `bqx8fftxn` |
+| **256 lean (deliverable)** | 9a4cc62 | `/build256` | `/build256/librelane/runs/RUN_*` | `/root/harden256.log` | `bz9jtf2q2` |
+
+Check status (fresh session):
+- `docker exec eurosynth-harden bash -lc 'tail -30 /root/harden256.log'` (and `/root/resume.log`).
+  Success sentinels: `HARDEN256_EXIT=0` / `RESUME_EXIT=0`. Step progress:
+  `docker exec eurosynth-harden bash -lc 'ls -1dt /build256/librelane/runs/*/[0-9][0-9]-*/ | head'`.
+- GDS when done: `docker exec eurosynth-harden ls -la /build256/final/` (look for `final/gds/chip_top.gds`).
+  Extract: `docker cp eurosynth-harden:/build256/final <repo>/final` (final/ is gitignored — large binary).
+- Baseline 1024 is SLOW (16 Kbit flops; STA steps ~tens of min). If it's wedged or
+  no longer needed, the 256 lean GDS is the real deliverable.
+
+Remaining after a run finishes: verify `final/` GDS + check DRC/LVS in the run's
+reports/`*.rpt`/metrics; copy the GDS out; then Phase 4c (morning report + final push).
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)

@@ -1,0 +1,11 @@
+# This is a Unix-toolchain project (iverilog/cocotb/LibreLane run in Linux
+# containers). Force LF so shell scripts and HDL never break on CRLF.
+* text=auto eol=lf
+*.sv   text eol=lf
+*.svh  text eol=lf
+*.v    text eol=lf
+*.py   text eol=lf
+*.sh   text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf

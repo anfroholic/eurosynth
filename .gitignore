@@ -1,0 +1,30 @@
+# --- simulation artifacts ---
+*.vvp
+*.vcd
+*.fst
+cocotb/sim_build/
+cocotb/results.xml
+cocotb/__pycache__/
+sim_build/
+
+# --- LibreLane / GDSII outputs (large, regenerated) ---
+librelane/runs/
+final/
+
+# --- PDK (cloned by `make clone-pdk`, multi-GB) ---
+.ciel/
+ciel/
+pdk/
+*.pdk
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+
+# --- editor / OS cruft ---
+.DS_Store
+Thumbs.db
+
+# --- Claude Code machine-local settings (perms allowlist lives here) ---
+.claude/settings.local.json

@@ -1,0 +1,30 @@
+# Eurosynth simulation image.
+# Just enough to run the standalone Icarus testbench and the template's
+# cocotb harness (`make sim`). It deliberately does NOT contain the heavy
+# LibreLane/OpenROAD/PDK toolchain — GDSII hardening is a separate, human-run
+# step (see PLAN.md "make librelane runbook").
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        iverilog \
+        gtkwave \
+        make \
+        git \
+        ca-certificates \
+        python3 \
+        python3-pip \
+        python3-dev \
+        build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+# cocotb is the python-driven verification framework the template's `make sim`
+# uses; pin a known-good version so overnight runs are reproducible.
+RUN pip3 install --no-cache-dir \
+        "cocotb==1.9.2" \
+        cocotb-bus \
+        pytest \
+        numpy
+
+WORKDIR /work
+CMD ["bash"]

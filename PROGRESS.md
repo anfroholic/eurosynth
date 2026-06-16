@@ -11,10 +11,24 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - [x] 0c  Baseline on `main` (f861ae0) + scaffold on `overnight/karplus-strong`
           (8ce8bfe); both pushed to origin. `git push` credentials proven.
 
-## Phase 1 — Template integration
-- [ ] 1a  Recon: clone template, report core/ports/VERILOG_FILES/chip_top wiring
-- [ ] 1b  Integrate: files into src/ & tb/, reconcile ports, update VERILOG_FILES
-- [ ] 1c  Regression: standalone spine TB green from new paths
+> **Recon finding (changes the verification rail):** the template's `make sim`
+> (cocotb on `chip_top`) AND `make librelane` both need the **PDK** (multi-GB
+> `ciel` download) + nix toolchain for pad-cell behavioral models. Our light sim
+> image has neither. So **tonight's autonomous verification = standalone Icarus
+> TBs** on pure RTL (spine, ks_engine, chip_core elaboration). Full `chip_top`
+> cocotb + GDSII = the human PDK session. Our `chip_core` already matches the
+> template's exact port contract and is SRAM-free.
+>
+> **Execution reorder:** doing the fully-verifiable KS engine (Phase 2) + spine
+> wire-in (Phase 3) FIRST to bank verified value, THEN the heavier template
+> import (Phase 1) which is only elaboration-checkable without the PDK.
+
+## Phase 1 — Template integration  (done AFTER 2 & 3)
+- [x] 1a  Recon — template cloned to sibling dir; integration points mapped
+- [~] 1b  Layout: synth_spine/chip_core → src/, tb_synth_spine → tb/ (spine green)
+- [ ] 1b' Import template tree into repo; add synth_spine+ks_engine to VERILOG_FILES
+          & cocotb sources; strip SRAM macro/PDN refs. Verify: chip_core elaborates.
+- [ ] 1c  Regression: standalone spine TB green from src//tb/ paths
 
 ## Phase 2 — Karplus-Strong engine
 - [ ] 2a  Spec: docs/karplus_strong.md (ports match contract)

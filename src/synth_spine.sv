@@ -31,7 +31,7 @@ module synth_spine #(
 
     // --- Karplus-Strong control (voice 4) ---
     input  wire       ks_pluck,        // 1-clk strobe: (re)excite the string
-    input  wire [9:0] ks_period,       // delay-line length (valid 2..1023)
+    input  wire [9:0] ks_period,       // delay-line length (10-bit; clamped to 2..NMAX-1 inside ks_engine)
 
     // --- I2S-style serial audio output (to an external DAC) ---
     output wire i2s_bclk,

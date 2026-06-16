@@ -26,11 +26,13 @@ module tb_ks_engine;
     reg  rst_n = 1'b0;
     reg  sample_tick = 1'b0;
     reg  pluck = 1'b0;
-    reg  [9:0] period = 10'd0;            // $clog2(NMAX=1024) = 10 bits
+    reg  [9:0] period = 10'd0;            // fixed 10-bit `period` port (per contract)
     wire signed [15:0] sample;
 
-    // DEFAULT parameters: NMAX=1024, DECAY_NUM=2047, DECAY_SHIFT=12,
+    // DEFAULT parameters: NMAX=256, DECAY_NUM=2047, DECAY_SHIFT=12,
     // LFSR_SEED=0xACE1, LFSR_POLY=0xB400, SAMPLE_W=16. Do NOT override.
+    // `period` is a fixed 10-bit port regardless of NMAX (clamped internally to
+    // [2, NMAX-1]); PGOLDEN=48 <= NMAX-1 so the golden vector is unchanged.
     ks_engine dut (
         .clk(clk),
         .rst_n(rst_n),

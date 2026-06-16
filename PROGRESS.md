@@ -109,6 +109,12 @@ nix binary cache (prebuilt, not source-compiled). Commands run via
           caveat; smaller NMAX or SRAM macro would slash this). Re-running via
           **resume** (`--last-run --from OpenROAD.GeneratePDN`) to skip the 6 h
           synthesis. IN PROGRESS, background. Verify: `final/` GDS produced.
+- [x] 5d  **Lean variant: KS `NMAX` 1024→256** (per human call: finish 1024
+          baseline, then ship 256). `period` port decoupled to a fixed `[9:0]`
+          (contract) and clamped internally, so the pin map is untouched. Golden
+          is **byte-identical** (PGOLDEN=48 ≤ 255). **Verified (main): KS OK /
+          SPINE OK / ELAB OK; `models/ks_golden.hex` unchanged.** ✅ Hardens far
+          faster (4 Kbit vs 16 Kbit). To be hardened once the 1024 baseline ends.
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)

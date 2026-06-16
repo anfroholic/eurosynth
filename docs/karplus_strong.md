@@ -21,7 +21,7 @@ harder engines (chaos, SID, bytebeat, neural) land. See `NOTES.md`
 | `rst_n`       | in  | 1                      | active-low synchronous reset |
 | `sample_tick` | in  | 1                      | 1-clk audio-rate strobe; the sustain step happens on this pulse |
 | `pluck`       | in  | 1                      | 1-clk strobe: (re)excite the string with a fresh noise burst |
-| `period`      | in  | `$clog2(NMAX)` (=10)   | delay length N, sets pitch; valid range 2..NMAX-1 |
+| `period`      | in  | `[9:0]` (fixed 10-bit) | delay length N, sets pitch; a fixed 10-bit control clamped internally to `[2, NMAX-1]` (so NMAX can change without touching the contract / pin map) |
 | `sample`      | out | `signed [SAMPLE_W-1:0]`| current output, registered, stable between ticks |
 
 ## Parameters (chosen defaults)
@@ -29,7 +29,7 @@ harder engines (chaos, SID, bytebeat, neural) land. See `NOTES.md`
 | parameter     | default        | meaning |
 |---------------|----------------|---------|
 | `SAMPLE_W`    | 16             | sample bit width (signed two's complement) |
-| `NMAX`        | 1024           | delay-line depth = maximum period (lowest pitch) |
+| `NMAX`        | 256            | delay-line depth = maximum period (lowest pitch) |
 | `DECAY_NUM`   | 2047           | feedback-gain numerator |
 | `DECAY_SHIFT` | 12             | feedback gain = `DECAY_NUM / 2^DECAY_SHIFT` = 2047/4096 ≈ **0.49976** |
 | `LFSR_SEED`   | `16'hACE1`     | initial LFSR state (also reset value) -> reproducible noise burst |
@@ -105,7 +105,9 @@ boundary. There is **no rounding** -- pure truncation toward -inf.
 - **Pitch:** the loop period is `N` samples, so the fundamental is approximately
   `f ≈ fs / N`. At `fs ≈ 48.8 kHz` (clk = 50 MHz, `BCLK_DIV = 16`; see NOTES "Timing"),
   `N = 48` gives `f ≈ 48800 / 48 ≈ 1017 Hz` (roughly a high C). Valid `N` is
-  `2..NMAX-1`; `N = NMAX-1 = 1023` is the lowest note, `≈ 47.7 Hz`.
+  `2..NMAX-1`; `N = NMAX-1 = 255` is the lowest note, `≈ 191 Hz`. (`period` is a
+  fixed 10-bit control clamped internally to `[2, NMAX-1]`, so a larger NMAX could
+  reach lower notes without any port/pin-map change.)
 - **Decay:** each circulation of the string applies the two-tap filter with per-tap
   gain `g ≈ 0.49976`. The averaging tap is a one-pole low-pass, so higher harmonics
   die faster than the fundamental (the classic KS "pluck then mellow" timbre). The
@@ -124,7 +126,8 @@ boundary. There is **no rounding** -- pure truncation toward -inf.
   `period = PGOLDEN = 48`, then run `NSAMP = 256` sustain steps, capturing `sample`
   (= the value read this tick, `out`) on each step. Constants:
   `DECAY_NUM=2047`, `DECAY_SHIFT=12`, `LFSR_SEED=0xACE1`, `LFSR_POLY=0xB400`,
-  `NMAX=1024`.
+  `NMAX=256`. (The golden vector is independent of NMAX since `PGOLDEN = 48 <=
+  NMAX-1`: the algorithm only touches `line[0..N-1]`.)
 - **Output format:** `models/ks_golden.hex`, one line per sample, **4-digit lowercase
   hex** of the 16-bit two's-complement value (e.g. `-1 -> ffff`, `-7568 -> e270`),
   no header -- parses cleanly with Verilog `$readmemh`.
@@ -140,10 +143,11 @@ boundary. There is **no rounding** -- pure truncation toward -inf.
 
 ## AREA caveat
 
-A `NMAX = 1024`-deep × 16-bit delay line is **16 Kbit of state** -- large. For v0 it is
+A `NMAX = 256`-deep × 16-bit delay line is **4 Kbit of state** -- much smaller than the
+original 1024-deep (16 Kbit) version, so it synthesizes/hardens far faster. For v0 it is
 an **inferred reg-array RAM** (a `reg [15:0] line [0:NMAX-1]`) which is fine for
 simulation and for proving the contract, but it is **not** how this should reach real
-silicon: synthesizing 1024×16 flops is area-hungry and timing-unfriendly. Production
+silicon: synthesizing 256×16 flops is still area-hungry and timing-unfriendly. Production
 options: (1) instantiate a proper **SRAM macro** (the GF180MCU
 `gf180mcu_..._sram512x8...` parts the template removed -- see NOTES "Integrating into
 the template" step 4 and "SRAM macros were removed"), reading `out`/`prev` and writing

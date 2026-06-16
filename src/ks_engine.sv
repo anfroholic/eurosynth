@@ -21,7 +21,7 @@
 
 module ks_engine #(
     parameter SAMPLE_W    = 16,
-    parameter NMAX        = 1024,        // delay-line depth = max period (lowest pitch)
+    parameter NMAX        = 256,         // delay-line depth = max period (lowest pitch)
     parameter DECAY_NUM   = 2047,        // feedback-gain numerator
     parameter DECAY_SHIFT = 12,          // gain = DECAY_NUM / 2^DECAY_SHIFT (~0.49976)
     parameter LFSR_SEED   = 16'hACE1,    // initial / reset LFSR state -> reproducible burst
@@ -32,7 +32,10 @@ module ks_engine #(
 
     input  wire sample_tick,                          // 1-clk audio-rate strobe: sustain step
     input  wire pluck,                                // 1-clk strobe: (re)excite the string
-    input  wire [$clog2(NMAX)-1:0] period,            // delay length N (pitch); valid 2..NMAX-1
+    // `period` is a FIXED 10-bit control port (the engine contract / chip_core pin
+    // map: ks_period = bidir_in[15:6]). It is clamped INTERNALLY to [2, NMAX-1], so
+    // NMAX (the array depth) can change without touching the contract or the pin map.
+    input  wire [9:0] period,                         // delay length N (pitch); valid 2..NMAX-1
 
     output reg signed [SAMPLE_W-1:0] sample           // registered output, held between ticks
 );
@@ -64,11 +67,23 @@ module ks_engine #(
     // Effective length: N = clamp(period, 2, NMAX-1), exactly as ks_ref.py clamps.
     // Captured at the moment of pluck so a mid-ring `period` change is ignored
     // until the next pluck (matches the model: N is set inside pluck()).
-    localparam [AW-1:0] N_MIN = AW'(2);          // floor: shortest string
-    localparam [AW-1:0] N_MAX = AW'(NMAX - 1);   // ceiling: longest string (NMAX-1)
-    wire [AW-1:0] clamped_period = (period < N_MIN) ? N_MIN
-                                 : (period > N_MAX) ? N_MAX
-                                 :                    period;
+    //
+    // `period` is a fixed 10-bit control; the array index is AW = $clog2(NMAX) bits
+    // (e.g. 8 for NMAX=256). The comparison is done at full 10-bit width so a
+    // `period` larger than NMAX-1 cannot wrap before it is detected; the result is
+    // narrowed to AW bits ONLY on the branch where the value is provably <= NMAX-1
+    // (NMAX-1 fits in AW bits by construction), so there is no truncation surprise.
+    localparam [9:0]    N_MIN10 = 10'd2;             // floor: shortest string (10-bit)
+    localparam [9:0]    N_MAX10 = 10'(NMAX - 1);     // ceiling: NMAX-1, fits in 10 bits
+    localparam [AW-1:0] N_MIN   = AW'(2);            // floor as an AW-bit index
+    localparam [AW-1:0] N_MAX   = AW'(NMAX - 1);     // ceiling as an AW-bit index
+    // 10-bit clamp matching ks_ref._clamp_period EXACTLY:
+    //   period < 2        -> 2
+    //   period > NMAX-1   -> NMAX-1
+    //   else              -> period   (now provably <= NMAX-1, so AW bits suffice)
+    wire [AW-1:0] clamped_period = (period < N_MIN10) ? N_MIN
+                                 : (period > N_MAX10) ? N_MAX
+                                 :                      period[AW-1:0];
 
     // One Galois LFSR step, parameterised on the state fed in. Identical to
     // ks_ref.lfsr_step():  lsb = s[0]; s >>= 1; if (lsb) s ^= LFSR_POLY;

@@ -169,8 +169,9 @@ standalone TBs are the trust anchor — they need **no PDK**.
   golden TB (`tb/tb_ks_engine.sv`) chain closes: **KS OK, 256/256 samples, 0
   mismatches.** Algorithm: a Galois-LFSR noise burst seeds the delay line on
   `pluck`, then a two-tap average × decay (gain `DECAY_NUM=2047 >> 12 ≈ 0.49976`)
-  recirculates one step per `sample_tick`. `NMAX=1024` (period 2..1023); the
-  delay line is an inferred reg-array RAM.
+  recirculates one step per `sample_tick`. `NMAX=256` (period 2..255); the
+  delay line is an inferred reg-array RAM. `period` is a fixed 10-bit control
+  clamped internally to `[2, NMAX-1]`, so NMAX is decoupled from the pin map.
 - **Spine integration proven.** KS is wired as `voice_sel = 4`. `tb/tb_synth_spine.sv`
   phase [5] plucks then selects voice 4 → **SPINE OK, 27 frames, 0 mismatches**,
   and the decoded I2S word is **-7568 = the KS golden first sample** — i.e. the
@@ -208,10 +209,12 @@ bash scripts/sim.sh bash -lc 'iverilog -g2012 -o /tmp/core.vvp src/chip_core.sv 
 - **Placeholder oscillators** (saw/square) are stand-ins to exercise the mux; they
   get replaced/augmented by real engines.
 - **KS delay-line area**: the Karplus-Strong delay line is an inferred reg-array
-  RAM (`NMAX=1024` × 16b = 16 Kbit of flops) — fine for sim and for proving the
-  contract, but area-hungry / timing-unfriendly in silicon. Production should back
-  it with an SRAM macro or pick a smaller `NMAX` (see `docs/karplus_strong.md`
-  "AREA caveat"). The contract is independent of how `line` is stored.
+  RAM (`NMAX=256` × 16b = 4 Kbit of flops) — fine for sim and for proving the
+  contract, but still area-hungry / timing-unfriendly in silicon. Production should
+  back it with an SRAM macro or pick an even smaller `NMAX` (see
+  `docs/karplus_strong.md` "AREA caveat"). `period` is a fixed 10-bit control
+  clamped internally to `[2, NMAX-1]`, so NMAX can change without touching the
+  contract or pin map. The contract is independent of how `line` is stored.
 - **Area budget**: don't pack the 1x0p5 slot near full — leave headroom for timing
   closure and routing. Consider a larger slot if the engine list grows.
 - **Analog/TRNG**: any on-die analog (entropy source, etc.) is a categorically

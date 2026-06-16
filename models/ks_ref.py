@@ -22,7 +22,7 @@ import os
 # The RTL testbench MUST use the same values.
 # ----------------------------------------------------------------------------
 SAMPLE_W    = 16        # sample bit width
-NMAX        = 1024      # delay-line depth (max period)
+NMAX        = 256       # delay-line depth (max period)
 DECAY_NUM   = 2047      # feedback gain numerator
 DECAY_SHIFT = 12        # feedback gain = DECAY_NUM / 2^DECAY_SHIFT  (~0.49976)
 LFSR_SEED   = 0xACE1    # 16-bit LFSR seed

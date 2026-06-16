@@ -4,24 +4,40 @@
 // spine (clock/reset -> sample-tick -> voice mux -> I2S serializer, plus the
 // bypass test ramp). Real engines bolt on as additional voice_sel inputs.
 //
-// Pin map (1x1 slot: 12 input pads, 40 bidir pads, 2 analog pads):
-//   input_in[2:0]  -> voice_sel   (0=bypass ramp, 1=saw, 2=square, 3=silence)
+// Pin map (1x0p5 slot: 4 input pads, 46 bidir pads, 4 analog pads):
+//   input_in[2:0]  -> voice_sel   (0=bypass ramp, 1=saw, 2=square, 3=silence,
+//                                  4=Karplus-Strong pluck)
 //   input_in[3]    -> bypass_en   (force the bring-up test ramp)
-//   input_in[11:4] -> reserved (gates/CV/SPI later)
+//   (all 4 input pads are used; no pulls)
 //
-//   bidir_out[0]   <- i2s_sd      (serial audio data to external DAC)
-//   bidir_out[1]   <- i2s_bclk    (bit clock)
-//   bidir_out[2]   <- i2s_ws      (word select / LRCK)
-//   bidir_out[3]   <- heartbeat   ("chip is alive" toggle for an LED)
-//   bidir_out[4]   <- sample_tick (audio-rate frame strobe, scope tap)
-//   bidir_out[31:16] <- sample_dbg (parallel sample mirror, bring-up debug)
+// BIDIR pads are per-bit direction-configurable. For a given bit:
+//   OUTPUT = oe=1 & ie=0 ; INPUT = oe=0 & ie=1. So ie is the complement of oe.
+//
+//   INPUT bits (oe=0, ie=1), contiguous block [15:5]:
+//     bidir_in[5]      -> ks_pluck     (1-clk strobe to (re)excite the string)
+//     bidir_in[15:6]   -> ks_period    (10-bit delay-line length)
+//
+//   OUTPUT bits (oe=1, ie=0), everything else:
+//     bidir_out[0]     <- i2s_sd       (serial audio data to external DAC)
+//     bidir_out[1]     <- i2s_bclk     (bit clock)
+//     bidir_out[2]     <- i2s_ws       (word select / LRCK)
+//     bidir_out[3]     <- heartbeat    ("chip is alive" toggle for an LED)
+//     bidir_out[4]     <- sample_tick  (audio-rate frame strobe, scope tap)
+//     bidir_out[31:16] <- sample_dbg   (parallel sample mirror, bring-up debug)
+//     all other output bits drive 0.
+//
+// NOTE: this map assumes NUM_BIDIR_PADS >= 32 (true for 1x0p5 = 46).
 
 `default_nettype none
 
 module chip_core #(
-    parameter NUM_INPUT_PADS,
-    parameter NUM_BIDIR_PADS,
-    parameter NUM_ANALOG_PADS
+    // Defaults are placeholders only; chip_top always overrides all three
+    // explicitly (e.g. #(.NUM_INPUT_PADS(4),...)). Names/order are unchanged so
+    // the template's instantiation still matches; -g2012 requires a default in
+    // the ANSI parameter port list.
+    parameter NUM_INPUT_PADS  = 1,
+    parameter NUM_BIDIR_PADS  = 32,
+    parameter NUM_ANALOG_PADS = 1
     )(
     `ifdef USE_POWER_PINS
     inout  wire VDD,
@@ -51,11 +67,23 @@ module chip_core #(
     assign input_pu = '0;
     assign input_pd = '0;
 
-    // --- bidir pads: all outputs, fast CMOS ---
-    assign bidir_oe = '1;
+    // --- bidir pad direction mask ---
+    // bit i is an INPUT (oe=0) for 5<=i<=15, an OUTPUT (oe=1) everywhere else.
+    // The mask is purely static (a function of NUM_BIDIR_PADS only), so a
+    // generate loop drives every bit unconditionally -- no latch, and (unlike a
+    // constant always @(*) block) it actually elaborates to a real value.
+    wire [NUM_BIDIR_PADS-1:0] oe_mask;
+    genvar bi;
+    generate
+        for (bi = 0; bi < NUM_BIDIR_PADS; bi = bi + 1) begin : g_oe
+            // input region -> 0 ; output region -> 1
+            assign oe_mask[bi] = ((bi >= 5) && (bi <= 15)) ? 1'b0 : 1'b1;
+        end
+    endgenerate
+    assign bidir_oe = oe_mask;
+    assign bidir_ie = ~bidir_oe;     // ie is the complement of oe
     assign bidir_cs = '0;
     assign bidir_sl = '0;
-    assign bidir_ie = ~bidir_oe;
     assign bidir_pu = '0;
     assign bidir_pd = '0;
 
@@ -63,9 +91,15 @@ module chip_core #(
     wire [2:0] voice_sel = input_in[2:0];
     wire       bypass_en = input_in[3];
 
-    // tie off unused inputs so the tools don't warn
+    // --- Karplus-Strong controls in through bidir input bits [15:5] ---
+    wire       ks_pluck  = bidir_in[5];
+    wire [9:0] ks_period = bidir_in[15:6];
+
+    // tie off genuinely-unused inputs so the tools stay quiet.
+    // all 4 input_in bits are used now; unused bidir_in bits are [4:0] and
+    // [NUM_BIDIR_PADS-1:16].
     logic _unused;
-    assign _unused = &{1'b0, input_in[NUM_INPUT_PADS-1:4], &bidir_in};
+    assign _unused = &{1'b0, bidir_in[4:0], bidir_in[NUM_BIDIR_PADS-1:16]};
 
     // --- the spine ---
     wire        i2s_bclk, i2s_ws, i2s_sd, heartbeat, sample_tick;
@@ -79,6 +113,8 @@ module chip_core #(
         .rst_n      (rst_n),
         .voice_sel  (voice_sel),
         .bypass_en  (bypass_en),
+        .ks_pluck   (ks_pluck),
+        .ks_period  (ks_period),
         .i2s_bclk   (i2s_bclk),
         .i2s_ws     (i2s_ws),
         .i2s_sd     (i2s_sd),
@@ -96,7 +132,7 @@ module chip_core #(
         bout[2]      = i2s_ws;
         bout[3]      = heartbeat;
         bout[4]      = sample_tick;
-        bout[31:16]  = sample_dbg;   // 16-bit debug mirror (slots have >=38 bidir pads)
+        bout[31:16]  = sample_dbg;   // 16-bit debug mirror (NUM_BIDIR_PADS >= 32)
     end
     assign bidir_out = bout;
 

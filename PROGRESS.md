@@ -43,10 +43,17 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
           (main, in-container): SPINE OK, 27 frames, 0 mismatches; phases
           [1]–[4] unchanged; voice-4 round-trip decoded -7568 (== KS golden
           first sample), `ks_nonzero` guard proves the voice is non-silent.** ✅
-- [ ] 3b  `chip_core` 1x0p5 pin-map redesign: input_in[3:0] = voice_sel+bypass_en;
-          per-bit `bidir_oe`/`bidir_ie` so chosen bidir pads are INPUTS for
-          `pluck`/`period`; i2s+heartbeat+tick+sample_dbg on output bidir pads.
-          Verify: chip_core elaborates with 1x0p5 params (4/46/4), no latches.
+- [x] 3b  `chip_core` 1x0p5 pin-map redesign: `input_in[3:0]`=voice_sel+bypass_en;
+          per-bit `bidir_oe` mask (generate loop) → bidir `[15:5]` are INPUTS
+          (`ks_pluck`=bit5, `ks_period`=bits15:6), `bidir_ie=~bidir_oe`;
+          i2s+heartbeat+tick+sample_dbg on output bidir pads. New harness
+          `tb/tb_chip_core_elab.sv`. **Verified (main, in-container): ELAB OK with
+          4/46/4 — direction mask correct, i2s_bclk live, clean `-Wall`, exit 0;
+          spine TB still SPINE OK (no regression).** ✅
+          NOTE: had to add inert default param values (`=1/32/1`) — iverilog
+          `-g2012` rejects a no-default ANSI parameter (confirmed empirically).
+          Param names/order unchanged; `chip_top` overrides all three, so the
+          template contract is preserved.
 
 ## Phase 1 — Template integration  (after 2 & 3; only elaboration-checkable, no PDK)
 - [x] 1a  Recon — captured in docs/template_integration.md
@@ -69,7 +76,8 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - phase2c/ks_engine RTL → 890962f
 - phase2d/ks golden TB → a2c7021
 - docs/retarget PLAN to 1x0p5 → 7ae45ac
-- phase3a/wire-in (KS into spine) → (this commit)
+- phase3a/wire-in (KS into spine) → 7d16faa
+- phase3b/chip_core 1x0p5 pin map → (this commit)
 
 ## Morning report
 _(written by the final chunk)_

@@ -28,3 +28,11 @@ Thumbs.db
 
 # --- Claude Code machine-local settings (perms allowlist lives here) ---
 .claude/settings.local.json
+
+# --- template-import additions (gf180mcu PDK lands in ./gf180mcu via Makefile PDK_ROOT) ---
+gf180mcu/
+src/generated_defines.svh
+generated_defines.svh
+*.lyrdb
+gf180_drc.lyrdb
+img/

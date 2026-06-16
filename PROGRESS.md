@@ -20,6 +20,14 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 > Autonomous tonight verifies via **standalone Icarus TBs** (spine, ks_engine,
 > chip_core elaboration). Execution reorder: KS engine (P2) + wire-in (P3) FIRST,
 > heavier template import (P1) after.
+
+> ### 🟢 SCOPE CHANGE (2026-06-16, mid-run): GDSII hardening GREENLIT
+> The human greenlit **PLAN §9 (`make librelane`)** — formerly a non-goal — to run
+> autonomously. New trailing phase **P5** below attempts the RTL→GDSII flow for
+> `SLOT=1x0p5` in **WSL2 Ubuntu-22.04** (present on this machine; 108 GB free).
+> Standalone-TB rail is unaffected and still the trust anchor. Hardening is
+> long/heavy and may not finish by morning — P5 logs blockers in §12 rather than
+> thrash, and runs the heavy steps in the background.
 ---
 
 ## Phase 0 — De-risk & baseline  ✅ DONE (human awake)
@@ -57,15 +65,32 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 
 ## Phase 1 — Template integration  (after 2 & 3; only elaboration-checkable, no PDK)
 - [x] 1a  Recon — captured in docs/template_integration.md
-- [~] 1b  Layout: synth_spine/chip_core → src/, tb_synth_spine → tb/ (spine green)
-- [ ] 1b' Import template tree into repo; set DEFAULT_SLOT/usage to 1x0p5; add
-          synth_spine + ks_engine to VERILOG_FILES & cocotb sources; strip SRAM
-          macro/PDN refs. Verify: chip_core elaborates.
+- [x] 1b  Layout: synth_spine/chip_core → src/, tb_synth_spine → tb/ (spine green)
+- [x] 1b' Imported template tree (46 files: Makefile, flake, librelane/, cocotb/,
+          ip/, src/chip_top.sv, src/slot_defines.svh) keeping OUR chip_core.
+          `DEFAULT_SLOT=1x0p5`; `synth_spine`+`ks_engine` added to
+          `librelane/config.yaml` VERILOG_FILES & cocotb sources; SRAM macro +
+          PDN_MACRO_CONNECTIONS stripped from `macros_5v/3v3.yaml` & cocotb;
+          `.gitignore` extended (`gf180mcu/`, generated_defines). Excluded
+          `.github/` CI (nix; would fail every push) + template README. **Verified
+          (main): chip_core.sv untouched; SPINE OK / KS OK / ELAB OK all still
+          green; no PDK/runs/vcd junk in tree.** ✅
 
-## Phase 4 — GDSII prep & docs (NO hardening run)
-- [ ] 4a  librelane/config.yaml VERILOG_FILES + top + 1x0p5 correct
+## Phase 4 — GDSII prep & docs
+- [x] 4a  `librelane/config.yaml` verified: VERILOG_FILES lists all 4 RTL files,
+          `DESIGN_NAME: chip_top`, clock `clk_PAD`/40ns, SRAM macros removed,
+          slot 1x0p5 via `DEFAULT_SLOT` + `slot_defines.svh` (4/46/4). (Inspection,
+          not a hardening run.) ✅
 - [ ] 4b  NOTES.md status/roadmap/pin-map updated for 1x0p5 + KS
 - [ ] 4c  Final verify, push, morning report
+
+## Phase 5 — GDSII hardening (§9, greenlit mid-run) — attempt autonomously
+- [ ] 5a  Bootstrap hardening env in WSL2 Ubuntu-22.04: librelane + ciel
+          (pip or nix). Verify: `librelane --version` runs.
+- [ ] 5b  `make clone-pdk` (ciel fetches gf180mcuD PDK, multi-GB) — background.
+          Verify: PDK dir populated.
+- [ ] 5c  `SLOT=1x0p5 make librelane` — RTL→GDSII (slow; background + wakeups).
+          Verify: run completes, `final/` views produced. Blockers → §12.
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)
@@ -77,7 +102,8 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 - phase2d/ks golden TB → a2c7021
 - docs/retarget PLAN to 1x0p5 → 7ae45ac
 - phase3a/wire-in (KS into spine) → 7d16faa
-- phase3b/chip_core 1x0p5 pin map → (this commit)
+- phase3b/chip_core 1x0p5 pin map → a0fe78b
+- phase1b'/template import (1x0p5, KS in config) → (this commit)
 
 ## Morning report
 _(written by the final chunk)_

@@ -11,6 +11,9 @@ sim_build/
 librelane/runs/
 final/
 
+# --- listenable audio previews (large/binary throwaways, like final/) ---
+previews/
+
 # --- PDK (cloned by `make clone-pdk`, multi-GB) ---
 .ciel/
 ciel/

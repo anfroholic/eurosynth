@@ -7,6 +7,10 @@ and the LibreLane digital RTL-to-GDSII flow.
 This file is the source of truth for *why the design looks the way it does*. If you
 are a fresh session picking this up, read this first, then the comments in the RTL.
 
+> 📣 **Showing the chip off?** See [docs/SHOWCASE.md](docs/SHOWCASE.md) (architecture,
+> silicon signoff, specs, pinout) and [docs/HARDWARE_GUIDE.md](docs/HARDWARE_GUIDE.md)
+> (power/clock/reset + a sample circuit for every pad + an Arduino controller).
+
 ---
 
 ## What we're building

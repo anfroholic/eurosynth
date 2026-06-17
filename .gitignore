@@ -36,3 +36,6 @@ generated_defines.svh
 *.lyrdb
 gf180_drc.lyrdb
 img/
+# ...but DO track the committed showcase diagrams / die render
+!docs/img/
+!docs/img/**

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 z" fill="#334155"/>
+    </marker>
+    <style>
+      .b{rx:8;}
+      .ttl{font-size:19px;font-weight:700;fill:#0f172a}
+      .lbl{font-size:13px;font-weight:700;fill:#0f172a}
+      .sub{font-size:11px;fill:#475569}
+      .net{stroke:#334155;stroke-width:1.6;fill:none}
+      .pwr{stroke:#dc2626;stroke-width:2;fill:none}
+      .gnd{stroke:#64748b;stroke-width:2;fill:none}
+    </style>
+  </defs>
+  <rect x="0" y="0" width="980" height="560" fill="#f8fafc"/>
+  <text x="24" y="34" class="ttl">EuroSynth — minimum playable system</text>
+  <text x="24" y="54" class="sub">Everything the chip needs to make sound: 5 V power, a clock, a reset, mode/pitch control, and a DAC + amp on the audio side.</text>
+
+  <!-- 5V supply -->
+  <rect x="30" y="90" width="150" height="70" rx="8" fill="#fee2e2" stroke="#dc2626"/>
+  <text x="105" y="118" text-anchor="middle" class="lbl">+5 V supply</text>
+  <text x="105" y="138" text-anchor="middle" class="sub">LDO/buck, ≥150 mA</text>
+  <text x="105" y="152" text-anchor="middle" class="sub">bulk + 100 nF/pad</text>
+
+  <!-- clock -->
+  <rect x="30" y="180" width="150" height="64" rx="8" fill="#fef3c7" stroke="#d97706"/>
+  <text x="105" y="206" text-anchor="middle" class="lbl">12.288 MHz osc</text>
+  <text x="105" y="224" text-anchor="middle" class="sub">canned oscillator (5 V)</text>
+
+  <!-- reset -->
+  <rect x="30" y="264" width="150" height="64" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+  <text x="105" y="290" text-anchor="middle" class="lbl">reset circuit</text>
+  <text x="105" y="308" text-anchor="middle" class="sub">RC POR + button</text>
+
+  <!-- controller -->
+  <rect x="30" y="348" width="150" height="96" rx="8" fill="#e0e7ff" stroke="#4f46e5"/>
+  <text x="105" y="374" text-anchor="middle" class="lbl">controller (5 V)</text>
+  <text x="105" y="392" text-anchor="middle" class="sub">Arduino Nano / Uno</text>
+  <text x="105" y="408" text-anchor="middle" class="sub">drives voice_sel,</text>
+  <text x="105" y="424" text-anchor="middle" class="sub">bypass_en, pluck,</text>
+  <text x="105" y="438" text-anchor="middle" class="sub">period[9:0]</text>
+
+  <!-- CHIP -->
+  <rect x="380" y="150" width="220" height="280" rx="10" fill="#fffbeb" stroke="#ca8a04" stroke-width="2"/>
+  <text x="490" y="186" text-anchor="middle" class="lbl" font-size="16" fill="#a16207">EuroSynth chip</text>
+  <text x="490" y="206" text-anchor="middle" class="sub">chip_top (5 V)</text>
+  <text x="392" y="246" class="sub">clk_PAD</text>
+  <text x="392" y="270" class="sub">rst_n_PAD</text>
+  <text x="392" y="294" class="sub">input_PAD[3:0]</text>
+  <text x="392" y="318" class="sub">bidir[5],[15:6] (KS in)</text>
+  <text x="588" y="246" text-anchor="end" class="sub">i2s_sd/bclk/ws</text>
+  <text x="588" y="270" text-anchor="end" class="sub">sample_dbg[15:0]</text>
+  <text x="588" y="294" text-anchor="end" class="sub">sample_tick</text>
+  <text x="588" y="318" text-anchor="end" class="sub">heartbeat</text>
+
+  <!-- audio path A: I2S DAC -->
+  <rect x="700" y="120" width="150" height="80" rx="8" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="775" y="146" text-anchor="middle" class="lbl">I2S DAC</text>
+  <text x="775" y="164" text-anchor="middle" class="sub">PCM5102A</text>
+  <text x="775" y="180" text-anchor="middle" class="sub">(via 5V→3.3V shift)</text>
+
+  <!-- audio path B: R2R -->
+  <rect x="700" y="220" width="150" height="80" rx="8" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="775" y="246" text-anchor="middle" class="lbl">R-2R ladder DAC</text>
+  <text x="775" y="264" text-anchor="middle" class="sub">8-bit off dbg[15:8]</text>
+  <text x="775" y="280" text-anchor="middle" class="sub">latch on sample_tick</text>
+
+  <!-- amp/jack -->
+  <rect x="700" y="330" width="150" height="80" rx="8" fill="#cffafe" stroke="#0891b2"/>
+  <text x="775" y="356" text-anchor="middle" class="lbl">RC filter + amp</text>
+  <text x="775" y="374" text-anchor="middle" class="sub">~6 kHz LPF, AC couple</text>
+  <text x="775" y="390" text-anchor="middle" class="sub">→ line / eurorack out</text>
+
+  <!-- LED -->
+  <rect x="700" y="430" width="150" height="50" rx="8" fill="#fef9c3" stroke="#ca8a04"/>
+  <text x="775" y="460" text-anchor="middle" class="sub">heartbeat LED + 1k</text>
+
+  <!-- nets -->
+  <line x1="180" y1="120" x2="380" y2="160" class="pwr" marker-end="url(#a2)"/>
+  <text x="250" y="135" class="sub" fill="#dc2626">+5 V to all VDD/DVDD</text>
+  <line x1="180" y1="212" x2="380" y2="244" class="net" marker-end="url(#a2)"/>
+  <line x1="180" y1="296" x2="380" y2="268" class="net" marker-end="url(#a2)"/>
+  <line x1="180" y1="396" x2="380" y2="300" class="net" marker-end="url(#a2)"/>
+
+  <line x1="600" y1="244" x2="700" y2="160" class="net" marker-end="url(#a2)"/>
+  <line x1="600" y1="268" x2="700" y2="250" class="net" marker-end="url(#a2)"/>
+  <line x1="600" y1="292" x2="700" y2="262" class="net" marker-end="url(#a2)"/>
+  <line x1="775" y1="200" x2="775" y2="330" class="net" marker-end="url(#a2)"/>
+  <line x1="775" y1="300" x2="775" y2="330" class="net" marker-end="url(#a2)"/>
+  <line x1="600" y1="318" x2="700" y2="450" class="net" marker-end="url(#a2)"/>
+
+  <text x="24" y="520" class="sub">Pick ONE audio path. R-2R (passive, 5 V-native, format-proof) is the no-fuss hobby route; the I2S DAC is cleaner but needs a 5 V→3.3 V level shift.</text>
+  <text x="24" y="540" class="sub">First bring-up: skip the controller — strap voice_sel/period with DIP switches and set bypass_en=1 to hear the built-in test sawtooth.</text>
+</svg>

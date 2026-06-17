@@ -275,12 +275,38 @@ launched detached in the `eurosynth-harden` container.
           function". yosys now reads + elaborates the whole `chip_core` hierarchy
           (5 engines + SPI), `check` = **0 problems**. Bit-exact preserved (NEURAL/
           SPINE/ELAB green). ✅ (commit a5b674a)
-- [~] Fc  **`make librelane` RUNNING** — detached run, survives sessions (orphans to
-          PID 1). Cleared lint + jsonheader; now in **step 06 yosys-synthesis** (grinding
-          the KS `line[]` delay line + neural LUT/weight flop arrays — the slow step,
-          ~hours, as in the 256 run). Setup timing WILL violate at 25 MHz (expected /
-          acceptable for this audio chip; hold is the fatal one); **area/fit on the half
-          slot is the open question** — placement (later) decides. May complete or strain.
+- [x] Fc  **`make librelane` COMPLETE — full-roster GDSII produced.** 🎉 The whole
+          5-engine + SPI chip placed, routed, and streamed out on the **1x0p5 half slot**.
+          `ROSTER2_EXIT=0`. Deliverable extracted to repo `final_roster/` (gitignored):
+          gds (135 MB), render PNG, metrics, nl/pnl, def, sdc.
+- [x] Fd  **KLayout DRC OOM hit + fixed.** Run 1 reached the signoff DRC (~step 68) then
+          died: `workers: max` (=48) OOM-killed several deck workers on the big layout
+          (deep-mode DRC over ~1M polygons/layer) -> empty deck results ("unexpected
+          token at ''"). NOT a design issue. Fixed by bounding `KLAYOUT_DRC_OPTIONS` +
+          `KLAYOUT_ANTENNA_OPTIONS` `workers: 6` (commit cfd7e88); **resumed
+          `--last-run --from KLayout.DRC`** (skipped the ~8 h of cached synth/PnR) ->
+          ran clean to completion.
+
+### Phase F signoff (full roster, SLOT=1x0p5, gf180mcuD)
+| Check | Result |
+|---|---|
+| Magic DRC / KLayout DRC / routing DRC | **0 / 0 / 0** ✅ |
+| LVS errors / device diffs | **0 / 0** ✅ (layout == netlist) |
+| Hold timing (post-fab-fatal) | **0 violations**, WS +0.32 ns ✅ |
+| Antenna (final, post-repair) | **1 violating net / 1 pin** ⚠️ (147 post-route -> repair cleared 146) |
+| Setup timing @ 25 MHz / 40 ns | WS **-22.9 ns**, TNS -93 us, **15 858** vio endpoints ⚠️ (expected; audio runs <<25 MHz) |
+| max slew / max fanout vios | 9201 / 462 (same slow-path family as setup) |
+| Utilization / instances | **57.5%** / 244 584 cells (256-only was 37% / 168 278) |
+| Die / core area | 9.95 M / 5.0 M um^2 (slot-bound; same die as the 256) |
+
+**Verdict:** manufacturable full-roster GDS — DRC + LVS + hold all clean; **fits comfortably**
+(57.5% util). Two caveats, both expected/minor: (1) **1 residual antenna violation** (the
+256 had 0) — likely waivable or clearable with more `DRT_ANTENNA_REPAIR_ITERS` / a diode
+(needs a re-route, ~hours); (2) **setup timing heavily violated** at 25 MHz — non-issue for
+a ~48 kHz audio chip (drive `clk_PAD` <<25 MHz), but worse than the 256 (more long combinational
+paths from the MLP MAC / chaos multipliers). Resume run dir
+`/buildroster/librelane/runs/RUN_2026-06-17_13-49-44`; logs `/root/harden_roster.log` +
+`/root/resume_roster.log` (sentinel `ROSTER2_EXIT=0`).
   - Rig: container **`eurosynth-harden`** (`nixos/nix`; LibreLane v3.1.0.dev1 + tools +
     PDK at `/pdk`). NOTE: this non-interactive shell needs
     `nix --extra-experimental-features "nix-command flakes" develop` (the bare

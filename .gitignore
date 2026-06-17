@@ -10,6 +10,7 @@ sim_build/
 # --- LibreLane / GDSII outputs (large, regenerated) ---
 librelane/runs/
 final/
+final_roster/
 
 # --- listenable audio previews (large/binary throwaways, like final/) ---
 previews/

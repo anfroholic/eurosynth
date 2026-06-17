@@ -49,6 +49,7 @@ module tb_synth_spine;
 
     integer checks = 0, fails = 0;
     reg ks_nonzero = 1'b0;   // set if any KS-voice (voice_sel==4) frame decodes non-zero
+    reg ch_nonzero = 1'b0;   // set if any chaos-voice (voice_sel==5) frame decodes non-zero
     reg bb_nonzero = 1'b0;   // set if any bytebeat-voice (voice_sel==6) frame decodes non-zero
 
     always @(posedge clk) begin
@@ -62,6 +63,7 @@ module tb_synth_spine;
         if (ws_seen == 1'b0 && i2s_ws == 1'b1 && rst_n) begin
             checks = checks + 1;
             if (voice_sel == 3'd4 && rx_acc !== 0) ks_nonzero <= 1'b1;
+            if (voice_sel == 3'd5 && rx_acc !== 0) ch_nonzero <= 1'b1;
             if (voice_sel == 3'd6 && rx_acc !== 0) bb_nonzero <= 1'b1;
             if (rx_acc === sample_dbg) begin
                 $display("  frame %0d: DAC decoded %0d  (intended %0d)  OK",
@@ -108,6 +110,17 @@ module tb_synth_spine;
             $display("  [5] FAIL: KS voice produced only silence (ks_nonzero never set)");
         end else begin
             $display("  [5] OK: KS voice reached the serializer with non-zero output");
+        end
+
+        $display("\n[5b] Voice 5 = chaos (configured over SPI, then selected):");
+        spi_write(8'h11, 16'hE000);     // config 0x11: r_seed=0xE0 (r~3.875), map_sel=0
+        bypass_en = 1'b0; voice_sel = 3'd5;
+        wait_frames(8);
+        if (!ch_nonzero) begin
+            fails = fails + 1;
+            $display("  [5b] FAIL: chaos voice produced only silence (ch_nonzero never set)");
+        end else begin
+            $display("  [5b] OK: SPI config + chaos reached the serializer with non-zero output");
         end
 
         $display("\n[6] Voice 6 = bytebeat (configured over SPI, then selected):");

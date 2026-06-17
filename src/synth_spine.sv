@@ -160,6 +160,7 @@ module synth_spine #(
     // ---------------------------------------------------------------------
     localparam NREG       = 128;
     localparam A_BYTEBEAT = 'h10;          // config word: bytebeat (voice 6)
+    localparam A_CHAOS    = 'h11;          // config word: chaos    (voice 5)
     wire [NREG*16-1:0] cfg_flat;
     wire        cfg_we;
     wire [6:0]  cfg_addr;
@@ -181,6 +182,17 @@ module synth_spine #(
         .sample(bb_sample)
     );
 
+    // Voice 5: chaos (fixed-point logistic / CA / Lorenz; config 0x11).
+    wire [15:0] cfg_chaos = cfg_flat[A_CHAOS*16 +: 16];
+    wire signed [15:0] chaos_sample;
+    chaos_engine u_chaos (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .map_sel(cfg_chaos[1:0]),    // 0x11[1:0]
+        .rate   (cfg_chaos[7:2]),    // 0x11[7:2]
+        .r_seed (cfg_chaos[15:8]),   // 0x11[15:8]
+        .sample(chaos_sample)
+    );
+
     // ---------------------------------------------------------------------
     // Voice-select mux: ONE source reaches the output at a time.
     // ---------------------------------------------------------------------
@@ -191,6 +203,7 @@ module synth_spine #(
             3'd1:    sel_sample = osc_saw;
             3'd2:    sel_sample = osc_sq;
             3'd4:    sel_sample = ks_sample;
+            3'd5:    sel_sample = chaos_sample;
             3'd6:    sel_sample = bb_sample;
             default: sel_sample = 16'sd0;   // silence
         endcase

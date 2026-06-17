@@ -92,6 +92,7 @@ module tb_chip_core_elab;
         //   bidir_in[15:6] = ks_period = 16 ; bidir_in[5] = ks_pluck strobe
         //   input_in[2:0]  = voice_sel = 4   ; input_in[3] = bypass_en = 0
         bidir_in[15:6] = 10'd16;     // ks_period
+        bidir_in[34]   = 1'b1;       // spi_csn idle-high (no SPI frame in flight)
         input_in       = 4'b0100;    // voice_sel=4 (KS), bypass_en=0
 
         @(posedge clk); bidir_in[5] = 1'b1;   // pulse ks_pluck for one clock
@@ -115,6 +116,18 @@ module tb_chip_core_elab;
             errors = errors + 1;
             $display("FAIL: bidir_oe[31:16] = %h (expected FFFF -- outputs)",
                      bidir_oe[31:16]);
+        end
+        // SPI input block {34,33,32} must be oe=0
+        if (bidir_oe[34:32] !== 3'b000) begin
+            errors = errors + 1;
+            $display("FAIL: bidir_oe[34:32] = %b (expected 000 -- SPI in)",
+                     bidir_oe[34:32]);
+        end
+        // SPI miso (bit 36) must be oe=1
+        if (bidir_oe[36] !== 1'b1) begin
+            errors = errors + 1;
+            $display("FAIL: bidir_oe[36] = %b (expected 1 -- SPI miso out)",
+                     bidir_oe[36]);
         end
         // ie must be the exact complement of oe across all pads
         if (bidir_ie !== ~bidir_oe) begin

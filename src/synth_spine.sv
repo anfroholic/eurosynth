@@ -25,13 +25,20 @@ module synth_spine #(
     input  wire clk,
     input  wire rst_n,                 // active low
 
-    // --- control (v0: straight from pins; SPI config comes later) ---
-    input  wire [2:0] voice_sel,       // 0=bypass ramp, 1=saw, 2=square, 3=silence, 4=Karplus-Strong pluck
+    // --- control (real-time play on pins; deep config over SPI, below) ---
+    input  wire [2:0] voice_sel,       // 0=bypass,1=saw,2=square,3=SID,4=Karplus-Strong,5=chaos,6=bytebeat,7=neural
     input  wire       bypass_en,       // force the test ramp regardless of voice_sel
 
-    // --- Karplus-Strong control (voice 4) ---
+    // --- Karplus-Strong control (voice 4); ks_period doubles as the shared
+    //     10-bit pitch bus for the SID/neural voices (see instances below) ---
     input  wire       ks_pluck,        // 1-clk strobe: (re)excite the string
-    input  wire [9:0] ks_period,       // delay-line length (10-bit; clamped to 2..NMAX-1 inside ks_engine)
+    input  wire [9:0] ks_period,       // delay-line length / shared pitch (10-bit)
+
+    // --- SPI config port: deep per-engine parameters + neural weights ---
+    input  wire       spi_sclk,        // SPI slave clock          (bidir pad, in)
+    input  wire       spi_mosi,        // SPI master-out-slave-in   (bidir pad, in)
+    input  wire       spi_csn,         // SPI chip-select, active low (bidir pad, in)
+    output wire       spi_miso,        // SPI master-in-slave-out   (bidir pad, out)
 
     // --- I2S-style serial audio output (to an external DAC) ---
     output wire i2s_bclk,
@@ -146,6 +153,35 @@ module synth_spine #(
     );
 
     // ---------------------------------------------------------------------
+    // SPI config port: a NREG x 16 register file written over SPI. Each engine
+    // reads its slice combinationally (config map in docs/engines_plan.md). The
+    // cfg write-event taps (cfg_we/addr/wdata) route neural weights (0x40-0x4F)
+    // straight into the neural engine's weight-load port.
+    // ---------------------------------------------------------------------
+    localparam NREG       = 128;
+    localparam A_BYTEBEAT = 'h10;          // config word: bytebeat (voice 6)
+    wire [NREG*16-1:0] cfg_flat;
+    wire        cfg_we;
+    wire [6:0]  cfg_addr;
+    wire [15:0] cfg_wdata;
+    spi_config #(.NREG(NREG)) u_spi (
+        .clk(clk), .rst_n(rst_n),
+        .spi_sclk(spi_sclk), .spi_mosi(spi_mosi), .spi_csn(spi_csn),
+        .spi_miso(spi_miso),
+        .cfg_flat(cfg_flat), .cfg_we(cfg_we), .cfg_addr(cfg_addr), .cfg_wdata(cfg_wdata)
+    );
+
+    // Voice 6: bytebeat (free-running integer formula; config 0x10).
+    wire [15:0] cfg_bytebeat = cfg_flat[A_BYTEBEAT*16 +: 16];
+    wire signed [15:0] bb_sample;
+    bytebeat u_bb (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .formula_sel(cfg_bytebeat[3:0]),   // 0x10[3:0]
+        .t_inc      (cfg_bytebeat[11:4]),  // 0x10[11:4]
+        .sample(bb_sample)
+    );
+
+    // ---------------------------------------------------------------------
     // Voice-select mux: ONE source reaches the output at a time.
     // ---------------------------------------------------------------------
     reg signed [15:0] sel_sample;
@@ -155,6 +191,7 @@ module synth_spine #(
             3'd1:    sel_sample = osc_saw;
             3'd2:    sel_sample = osc_sq;
             3'd4:    sel_sample = ks_sample;
+            3'd6:    sel_sample = bb_sample;
             default: sel_sample = 16'sd0;   // silence
         endcase
     end

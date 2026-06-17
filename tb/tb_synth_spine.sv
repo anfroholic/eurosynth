@@ -20,6 +20,12 @@ module tb_synth_spine;
     reg ks_pluck = 1'b0;
     reg [9:0] ks_period = 10'd16;
 
+    // SPI config pins (idle: csn high, sclk/mosi low). Driven by spi_write().
+    reg  spi_sclk = 1'b0;
+    reg  spi_mosi = 1'b0;
+    reg  spi_csn  = 1'b1;
+    wire spi_miso;
+
     wire i2s_bclk, i2s_ws, i2s_sd, heartbeat, sample_tick;
     wire signed [SAMPLE_W-1:0] sample_dbg;
 
@@ -27,6 +33,7 @@ module tb_synth_spine;
         .clk(clk), .rst_n(rst_n),
         .voice_sel(voice_sel), .bypass_en(bypass_en),
         .ks_pluck(ks_pluck), .ks_period(ks_period),
+        .spi_sclk(spi_sclk), .spi_mosi(spi_mosi), .spi_csn(spi_csn), .spi_miso(spi_miso),
         .i2s_bclk(i2s_bclk), .i2s_ws(i2s_ws), .i2s_sd(i2s_sd),
         .sample_tick(sample_tick), .sample_dbg(sample_dbg),
         .heartbeat(heartbeat)
@@ -42,6 +49,7 @@ module tb_synth_spine;
 
     integer checks = 0, fails = 0;
     reg ks_nonzero = 1'b0;   // set if any KS-voice (voice_sel==4) frame decodes non-zero
+    reg bb_nonzero = 1'b0;   // set if any bytebeat-voice (voice_sel==6) frame decodes non-zero
 
     always @(posedge clk) begin
         bclk_d <= i2s_bclk;
@@ -54,6 +62,7 @@ module tb_synth_spine;
         if (ws_seen == 1'b0 && i2s_ws == 1'b1 && rst_n) begin
             checks = checks + 1;
             if (voice_sel == 3'd4 && rx_acc !== 0) ks_nonzero <= 1'b1;
+            if (voice_sel == 3'd6 && rx_acc !== 0) bb_nonzero <= 1'b1;
             if (rx_acc === sample_dbg) begin
                 $display("  frame %0d: DAC decoded %0d  (intended %0d)  OK",
                          checks, rx_acc, sample_dbg);
@@ -101,6 +110,17 @@ module tb_synth_spine;
             $display("  [5] OK: KS voice reached the serializer with non-zero output");
         end
 
+        $display("\n[6] Voice 6 = bytebeat (configured over SPI, then selected):");
+        spi_write(8'h10, 16'h0011);     // config 0x10: formula_sel=1, t_inc=1
+        bypass_en = 1'b0; voice_sel = 3'd6;
+        wait_frames(8);
+        if (!bb_nonzero) begin
+            fails = fails + 1;
+            $display("  [6] FAIL: bytebeat voice produced only silence (bb_nonzero never set)");
+        end else begin
+            $display("  [6] OK: SPI config + bytebeat reached the serializer with non-zero output");
+        end
+
         $display("\n==== %0d frames checked, %0d mismatches ====", checks, fails);
         if (fails == 0) $display("==== SPINE OK: every decoded sample matched ====\n");
         else            $display("==== SPINE FAIL ====\n");
@@ -112,6 +132,27 @@ module tb_synth_spine;
         integer k;
         begin
             for (k = 0; k < n; k = k + 1) @(posedge sample_tick);
+        end
+    endtask
+
+    // Drive one SPI Mode-0 frame {addr[7:0], data[15:0]}, MSB-first, at a rate
+    // far slower than clk (so the 2-FF synchronizer in spi_config sees it). MOSI
+    // changes while sclk is low; the slave samples on the rising edge. csn frames
+    // the transfer and the write commits on csn rising.
+    task spi_write(input [7:0] addr, input [15:0] data);
+        reg [23:0] frame;
+        integer i;
+        begin
+            frame = {addr, data};
+            spi_csn = 1'b0; #200;
+            for (i = 23; i >= 0; i = i - 1) begin
+                spi_mosi = frame[i];
+                #100; spi_sclk = 1'b1;   // rising edge: slave samples MOSI
+                #200; spi_sclk = 1'b0;   // falling edge
+                #100;
+            end
+            spi_csn = 1'b1;              // frame end -> config[addr] <= data
+            #200;
         end
     endtask
 

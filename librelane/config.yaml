@@ -184,7 +184,9 @@ KLAYOUT_DRC_THREADS: 1
 KLAYOUT_DRC_OPTIONS:
   decks: "all,-antenna,-density,-cup" # disable CUP for now
   variant: ref::$PDK
-  workers: max
+  # workers: max (=48 here) OOM-killed deck workers on the full-roster layout
+  # (deep-mode DRC over ~1M polygons/layer) -> empty deck results. Bound it.
+  workers: 6
 
 KLAYOUT_DENSITY_OPTIONS:
   decks: "density"
@@ -194,4 +196,4 @@ KLAYOUT_DENSITY_OPTIONS:
 KLAYOUT_ANTENNA_OPTIONS:
   decks: "antenna"
   variant: ref::$PDK
-  workers: max
+  workers: 6   # bounded for the same OOM reason as DRC (runs right after it)

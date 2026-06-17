@@ -7,14 +7,16 @@ work. See [PLAN.md](PLAN.md) for chunk definitions/resume and
 Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` blocked
 
 ---
-> ### 🚀 NEW DIRECTION (2026-06-17): full engine roster on branch `engines/kitchen-sink`
+> ### 🚀 NEW DIRECTION (2026-06-17): full engine roster on branch `engines/kitchen-sink` — ✅ COMPLETE
 > The 256 GDSII deliverable shipped (clean signoff; see Phase 5e). The 1024 baseline
-> was **stopped** per human call. New work adds the remaining roadmap engines —
+> was **stopped** per human call. New work added the remaining roadmap engines —
 > **Bytebeat, Chaos, SID, Neural morphing oscillator** — plus an **SPI config port**,
-> all on branch **`engines/kitchen-sink`**. **Plan + live status + resume steps:
+> all on branch **`engines/kitchen-sink`**. **Plan + status + resume steps:
 > [docs/engines_plan.md](docs/engines_plan.md).** Build method: **parallel subagents,
-> one per isolated engine, self-verifying; main integrates into the spine.** Engines
-> not started yet as of this handoff.
+> one per isolated engine, self-verifying; main integrates into the spine.**
+> **STATUS: roster COMPLETE + verified** — all 4 engines + SPI built, bit-exact
+> standalone, integrated into the spine, full regression green (see Phase E below).
+> Full multi-engine GDSII hardening remains a follow-up (not on this branch).
 ---
 > ### 🎯 TARGET SLOT CHANGED: `1x1` → `1x0p5` (half slot)
 > Pad budget is now **4 input / 46 bidir / 4 analog** (was 12/40/2). Only 4 input
@@ -208,6 +210,63 @@ Check status (fresh session):
 Remaining after a run finishes: verify `final/` GDS + check DRC/LVS in the run's
 reports/`*.rpt`/metrics; copy the GDS out; then Phase 4c (morning report + final push).
 
+## Phase E — kitchen-sink engine roster (branch `engines/kitchen-sink`)  ✅ DONE
+Method-of-record + per-engine specs: [docs/engines_plan.md](docs/engines_plan.md).
+All standalone TBs run via `bash scripts/sim.sh ...` (Docker `eurosynth-sim` Icarus,
+no PDK); every golden was **regenerated from its model** during the sweep, so the
+model↔RTL match is genuine. Engines built by parallel subagents; integration serial in
+main.
+- [x] Ea  **Bytebeat** (voice 6) — `src/bytebeat.sv`: free-running integer formula gen,
+          4 classic formulas, output = low 8 bits → signed-16; config 0x10
+          (`formula_sel[3:0]`, `t_inc[11:4]`). **BYTEBEAT OK** — `tb/tb_bytebeat.sv`,
+          256 samples, 0 mismatches. ✅ (commit 9912ff8)
+- [x] Eb  **SPI config port** — `src/spi_config.sv`: Mode 0, MSB-first, 24-bit frame
+          `{addr[7:0], data[15:0]}`; MOSI sampled on sclk-rising, write commits on csn
+          rising; 128×16 regfile flattened as `cfg_flat`; `miso` shifts fixed liveness
+          sig `0x5713`; sclk/mosi/csn 2-FF synced into `clk`. **SPI OK** —
+          `tb/tb_spi_config.sv`, 36 checks. ✅ (commit 9912ff8)
+- [x] Ec  **Chaos** (voice 5) — `src/chaos_engine.sv`: Q16 logistic map, rule-30
+          CA-perturbed logistic, Q12 Euler Lorenz; `map_sel` chooses; config 0x11
+          (`map_sel[1:0]`, `rate[7:2]`, `r_seed[15:8]`). **CHAOS OK** —
+          `tb/tb_chaos_engine.sv`, 255 samples, 0 mismatches. ✅ (commit d4e8344)
+- [x] Ed  **SID homage** (voice 3) — `src/sid_engine.sv` + `src/sid_voice.sv`: 3
+          phase-accum voices (saw/triangle/pulse+PW/LFSR-noise) with ring-mod (neighbor
+          MSB into triangle fold) + hard sync (neighbor overflow resets accumulator),
+          summed & scaled `>>2`; per-voice config 0x12–0x14 (`waveform[2:0]`, `ring[3]`,
+          `sync[4]`, `pulse-width[15:8]`); the 3 phase increments come from the shared
+          pitch bus (v1 detuned, v2 one octave down). **SID OK** — `tb/tb_sid_engine.sv`,
+          256 samples, 0 mismatches. ✅ (commit 71268ab)
+- [x] Ee  **Neural morphing oscillator** (voice 7) — `src/neural_osc.sv`: fixed-point
+          MLP 5→8→8→1, ReLU, Q1.14; `morph` (config 0x15[7:0]) sweeps
+          sine→saw→square→pulse; features = 4 phase harmonics from a 256-entry sine LUT
+          + morph; one time-shared MAC (~139 clk/sample). Weights trained offline in
+          numpy (seeded/deterministic; `models/neural_train.py`, `models/neural_ref.py`),
+          embedded via `$readmemh` (`models/neural_weights.hex`), SPI-overwritable in
+          0x40–0x4F. **NEURAL OK** — `tb/tb_neural_osc.sv`, 255 samples, 0 mismatches.
+          ✅ (commit 6182c2c)
+- [x] Ef  **Spine integration** (`src/synth_spine.sv`) — instantiates `spi_config` + all
+          4 new engines; each reads its config slice combinationally; mux cases 3/5/6/7
+          added; neural weight writes routed from the SPI write-event taps
+          (`cfg_we`/`cfg_addr`/`cfg_wdata`) when `cfg_addr` ∈ 0x40–0x4F. Pin-map
+          additions in `src/chip_core.sv` (1x0p5, 4/46/4): `bidir[34:32]` =
+          spi_sclk/mosi/csn (inputs, `oe=0`), `bidir[36]` = spi_miso (output);
+          `ks_period` (`bidir[15:6]`) now **also** doubles as the shared 10-bit pitch
+          bus for SID + neural. **Regression green:** spine `tb/tb_synth_spine.sv` =
+          **SPINE OK**, 64 frames, 0 mismatches (drives SPI frames, selects voices
+          3/5/6 non-silent + I2S round-trip; KS voice 4 unchanged); chip
+          `tb/tb_chip_core_elab.sv` = **ELAB OK** — direction mask correct incl. SPI bits
+          (`oe[34:32]=0`, `oe[36]=1`), neural voice 7 proven at real frame rate
+          (`BCLK_DIV=16` ≈ 1024 clk/frame ≫ 139-clk MAC). ✅
+- [x] Eg  RTL registered in librelane `VERILOG_FILES` + cocotb sources. ✅ (commit f393d2e)
+
+> **Follow-ups (not on this branch):** (1) Full multi-engine GDSII hardening is a
+> follow-up — 5 engines is tight on the half slot (may want a larger slot); the tree is
+> left hardening-ready (all RTL in `config.yaml`). The prior 256 KS-only clean signoff
+> (Phase 5e) stands on the previous branch; this branch is RTL + verification only.
+> (2) Before any hardening run, `neural_osc`'s `$readmemh` weight path must be made
+> **absolute** (synth cwd is the run dir, not repo root) — set the `WFILE` param or
+> convert weights to `localparam` initial values.
+
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)
 - phase0/scaffold → 8ce8bfe
@@ -220,6 +279,11 @@ reports/`*.rpt`/metrics; copy the GDS out; then Phase 4c (morning report + final
 - phase3a/wire-in (KS into spine) → 7d16faa
 - phase3b/chip_core 1x0p5 pin map → a0fe78b
 - phase1b'/template import (1x0p5, KS in config) → (this commit)
+- phaseE/bytebeat + SPI config port (voice 6) → 9912ff8
+- phaseE/chaos engine (voice 5) → d4e8344
+- phaseE/SID homage (voice 3) → 71268ab
+- phaseE/neural morphing osc (voice 7) → 6182c2c
+- phaseE/register engine RTL in librelane VERILOG_FILES + cocotb → f393d2e
 
 ## Morning report  (2026-06-17, autonomous run)
 

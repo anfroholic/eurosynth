@@ -18,11 +18,11 @@ verification rail.
 | 0 | bypass ramp (bring-up) | existing |
 | 1 | saw oscillator | existing |
 | 2 | square oscillator | existing |
-| 3 | **SID homage** (3 voices) | NEW |
+| 3 | **SID homage** (3 voices) | done |
 | 4 | Karplus-Strong | done |
-| 5 | **Chaos** (logistic/Lorenz + CA) | NEW |
-| 6 | **Bytebeat** | NEW |
-| 7 | **Neural morphing oscillator** | NEW |
+| 5 | **Chaos** (logistic/Lorenz + CA) | done |
+| 6 | **Bytebeat** | done |
+| 7 | **Neural morphing oscillator** | done |
 
 Only one voice reaches the output at a time (the spine mux) → engines stay isolated.
 
@@ -95,23 +95,48 @@ Bytebeat → SPI config port → Chaos → SID → Neural → full integration �
 
 ---
 
-## Status / resume (as of 2026-06-17, fresh-context handoff)
+## Status / resume (as of 2026-06-17)
 - **Branch:** `engines/kitchen-sink` (off `overnight/karplus-strong`; has spine + KS +
   showcase docs). 1024 hardening baseline was **stopped** per human; the 256 GDSII
   deliverable is done on the previous branch.
-- **Done:** this plan committed. **Engines: NOT started yet.** Verify loop confirmed
-  (`KS OK`, 0 mismatches), numpy 2.2.6 available (no torch — train neural in numpy).
-- **NEXT (do this with PARALLEL SUBAGENTS — one per isolated engine):** each subagent
-  writes ONLY its own new files (`src/<eng>.sv`, `models/<eng>_ref.py`,
-  `models/<eng>_golden.hex`, `tb/tb_<eng>.sv`), reads `src/ks_engine.sv` /
-  `models/ks_ref.py` / `tb/tb_ks_engine.sv` as the style template, and **self-verifies**
-  via `bash scripts/sim.sh ...` to `0 mismatches` before returning a CONCISE report
-  (final port list + verify result + control mapping). The main session must NOT let
-  subagents edit `synth_spine.sv` / `chip_core.sv` (integration is serial, in main):
-  after each engine verifies standalone, main wires it into the spine mux + drives its
-  params from the pin bus / SPI config, re-runs the spine regression, and commits.
-- **Build order:** Bytebeat (voice 6) → SPI config port → Chaos (voice 5) →
-  SID (voice 3) → Neural morphing osc (voice 7) → full integration (chip_core pin map
-  + SPI pins) → docs update (SHOWCASE / HARDWARE_GUIDE / NOTES / pinout SVG).
-- **Verify commands** are in the "Verification" section above; `scripts/sim.sh` wraps
-  the Docker `eurosynth-sim` Icarus image (no PDK needed).
+- **DONE — roster complete + verified.** All 4 new engines **and** the SPI config port
+  are built, **bit-exact** standalone (every golden regenerated from its model during
+  the sweep → model↔RTL match is genuine), **integrated** into the spine, with the full
+  regression **green**. The build-order/verification sections above stand as the
+  method-of-record; this is the result.
+
+### Done / verified
+Every standalone TB = **0 mismatches** (re-run via `bash scripts/sim.sh ...`):
+
+| voice / port | module(s) | TB / result | commit |
+|---|---|---|---|
+| 6 Bytebeat | `src/bytebeat.sv` | `tb/tb_bytebeat.sv` — 256 samples, **BYTEBEAT OK** | 9912ff8 (with SPI) |
+| — SPI config | `src/spi_config.sv` | `tb/tb_spi_config.sv` — 36 checks, **SPI OK** | 9912ff8 |
+| 5 Chaos | `src/chaos_engine.sv` | `tb/tb_chaos_engine.sv` — 255 samples, **CHAOS OK** | d4e8344 |
+| 3 SID | `src/sid_engine.sv`, `src/sid_voice.sv` | `tb/tb_sid_engine.sv` — 256 samples, **SID OK** | 71268ab |
+| 7 Neural | `src/neural_osc.sv` | `tb/tb_neural_osc.sv` — 255 samples, **NEURAL OK** | 6182c2c |
+| (config in librelane+cocotb) | — | RTL registered in `VERILOG_FILES` / cocotb sources | f393d2e |
+
+- **Integration** (`src/synth_spine.sv`): spine instantiates `spi_config` + all 4 new
+  engines; each reads its config slice combinationally; mux cases 3/5/6/7 added; neural
+  weight writes (0x40–0x4F) routed from the SPI write-event taps
+  (`cfg_we`/`cfg_addr`/`cfg_wdata`).
+- **Regression — green.** Spine `tb/tb_synth_spine.sv`: **SPINE OK**, 64 frames, 0
+  mismatches (drives SPI config frames, then selects voices 3/5/6 — each reaches the
+  serializer non-silent and round-trips through the I2S decoder; voice 4 KS unchanged).
+  Chip elaboration `tb/tb_chip_core_elab.sv`: **ELAB OK** — 1x0p5 (4/46/4) direction
+  mask correct including the new SPI bits (`oe[34:32]=0`, `oe[36]=1`), and neural voice 7
+  is proven at the real frame rate (`BCLK_DIV=16` ≈ 1024 clk/frame ≫ the ~139-clk MAC).
+- **Pin-map additions** are in chip_core (1x0p5, 4/46/4): `bidir[34:32]` = SPI
+  sclk/mosi/csn (inputs, `oe=0`), `bidir[36]` = SPI miso (output). `ks_period`
+  (`bidir[15:6]`) now **also** doubles as the shared 10-bit pitch bus for SID + neural.
+
+### Follow-ups (caveats, recorded honestly)
+- **Full multi-engine GDSII hardening is NOT done on this branch** — 5 engines is tight
+  on the half slot (may want a larger slot). The tree is left **hardening-ready** (all
+  RTL in `config.yaml`). The prior 256 KS-only clean signoff stands on the previous
+  branch; this branch is RTL + verification only.
+- **Before any hardening run**, `neural_osc`'s `$readmemh` weight path
+  (`models/neural_weights.hex`) must be made **absolute** (synth cwd is the run dir, not
+  the repo root) — set the `WFILE` param or convert the weights to `localparam` initial
+  values.

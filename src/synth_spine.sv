@@ -164,6 +164,9 @@ module synth_spine #(
     localparam A_SID0     = 'h12;          // config word: SID voice 0 (voice 3)
     localparam A_SID1     = 'h13;          // config word: SID voice 1
     localparam A_SID2     = 'h14;          // config word: SID voice 2
+    localparam A_NEURAL   = 'h15;          // config word: neural morph (voice 7)
+    localparam A_NN_W_LO  = 'h40;          // neural weight-load window (0x40..0x4F)
+    localparam A_NN_W_HI  = 'h4F;
     wire [NREG*16-1:0] cfg_flat;
     wire        cfg_we;
     wire [6:0]  cfg_addr;
@@ -216,6 +219,22 @@ module synth_spine #(
         .sample(sid_sample)
     );
 
+    // Voice 7: neural morphing oscillator. morph from config 0x15[7:0]; pitch
+    // from the shared pitch bus. Weights load at elaboration (reset defaults) and
+    // can be overwritten over SPI: a config write into the 0x40-0x4F window is
+    // routed to the engine's weight-load port (addr 0x40 -> weight 0).
+    wire [15:0] cfg_neural = cfg_flat[A_NEURAL*16 +: 16];
+    wire        nn_w_we    = cfg_we && (cfg_addr >= A_NN_W_LO[6:0]) && (cfg_addr <= A_NN_W_HI[6:0]);
+    wire [5:0]  nn_w_addr  = cfg_addr[5:0];          // 0x40..0x4F -> 0..15
+    wire signed [15:0] nn_sample;
+    neural_osc u_neural (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .pitch(ks_period),               // shared pitch bus
+        .morph(cfg_neural[7:0]),         // 0x15[7:0]
+        .w_we(nn_w_we), .w_addr(nn_w_addr), .w_wdata(cfg_wdata),
+        .sample(nn_sample)
+    );
+
     // ---------------------------------------------------------------------
     // Voice-select mux: ONE source reaches the output at a time.
     // ---------------------------------------------------------------------
@@ -229,6 +248,7 @@ module synth_spine #(
             3'd4:    sel_sample = ks_sample;
             3'd5:    sel_sample = chaos_sample;
             3'd6:    sel_sample = bb_sample;
+            3'd7:    sel_sample = nn_sample;
             default: sel_sample = 16'sd0;   // silence
         endcase
     end

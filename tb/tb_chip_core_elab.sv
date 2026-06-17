@@ -79,6 +79,15 @@ module tb_chip_core_elab;
         end
     end
 
+    // --- neural watcher: with voice 7 selected, did the sample mirror
+    //     (bidir_out[31:16]) ever go non-zero? Proves the time-shared MLP MAC
+    //     completes within a real frame (BCLK_DIV=16 -> ~1024 clk >> 139). ---
+    reg nn_nonzero = 1'b0;
+    always @(posedge clk) begin
+        if (rst_n && input_in == 4'b0111 && bidir_out[31:16] !== 16'h0000)
+            nn_nonzero <= 1'b1;
+    end
+
     // --- stimulus + checks ---
     initial begin
         $dumpfile("core_elab.vcd");
@@ -142,6 +151,18 @@ module tb_chip_core_elab;
             errors = errors + 1;
             $display("FAIL: i2s_bclk (bidir_out[1]) did not toggle (saw0=%b saw1=%b)",
                      saw_bclk_0, saw_bclk_1);
+        end
+
+        // ---- voice 7 (neural) at the real frame rate ----
+        // Select neural and let several full frames elapse so the 139-clk
+        // time-shared MLP MAC completes and its sample reaches the mirror.
+        input_in = 4'b0111;             // voice_sel=7 (neural), bypass_en=0
+        repeat (6000) @(posedge clk);   // ~6 frames at BCLK_DIV=16
+        if (!nn_nonzero) begin
+            errors = errors + 1;
+            $display("FAIL: neural voice 7 sample mirror stayed zero (MLP never completed)");
+        end else begin
+            $display("PASS: neural voice 7 mirror non-zero -- time-shared MLP completes at real rate");
         end
 
         // ---- summary ----

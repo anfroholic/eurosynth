@@ -108,29 +108,84 @@ nix binary cache (prebuilt, not source-compiled). Commands run via
           (steps 1–21 = ~7 h total) — synthesis is the bottleneck (see area
           caveat; smaller NMAX or SRAM macro would slash this). Re-running via
           **resume** (`--last-run --from OpenROAD.GeneratePDN`) to skip the 6 h
-          synthesis. IN PROGRESS, background. Verify: `final/` GDS produced.
+          synthesis. **Status 2026-06-17 ~04:18 UTC: still grinding — at step 37/83
+          (`OpenROAD.ResizerTimingPostCTS`) for ~1.5 h.** The post-CTS resizer is
+          churning on ~16 400 violating endpoints (WNS ~−54 ns vs 40 ns clock) from
+          the 1024:1 mux; it improves WNS only marginally per iteration and may not
+          converge. **LOWER PRIORITY now** — the 256 lean (5e) is the proven clean
+          deliverable, and the 1024 is the *same architecture* (just NMAX 1024) so it
+          adds no new manufacturability info, only a slower variant with worse setup.
+          Left running (no contention; pmap wall at step 60 is pre-fixed) — if it
+          finishes it's a bonus; not a blocker. Verify if done: `final/` GDS produced.
 - [x] 5d  **Lean variant: KS `NMAX` 1024→256** (per human call: finish 1024
           baseline, then ship 256). `period` port decoupled to a fixed `[9:0]`
           (contract) and clamped internally, so the pin map is untouched. Golden
           is **byte-identical** (PGOLDEN=48 ≤ 255). **Verified (main): KS OK /
           SPINE OK / ELAB OK; `models/ks_golden.hex` unchanged.** ✅ (commit 9a4cc62)
-- [~] 5e  Harden the lean 256 design — RUNNING in parallel with the 1024 baseline
-          (48 cores / 30 GB free, no contention). Verify: `final/` GDS produced.
+- [x] 5e  **Harden the lean 256 design — DONE, CLEAN SIGNOFF.** 🎉 `RESUME256_EXIT=0`,
+          flow reached step 80/80 and saved all final views. `final/gds/chip_top.gds`
+          (112 MB) produced. **Signoff (from `final/metrics.json` + manufacturability.rpt):**
+          Magic DRC **0**, KLayout DRC **0**, routing DRC **0** (converged), density **0**,
+          **LVS 0** (0 device/net/pin diffs, 0 errors — layout matches netlist),
+          antenna **0** violating nets/pins, PDN **0**, unmapped cells **0**, flow errors **0**.
+          manufacturability.rpt = **Antenna ✅ / LVS ✅ / DRC ✅ all Passed**. Die area
+          ~9.95 M units, core ~5.0 M, util 37%, 81 antenna diodes. **Caveat — setup
+          timing:** WNS −21.7 ns vs the template's default 40 ns/25 MHz `clk_PAD` SDC
+          (12 315 violating endpoints; the 256:1 delay-line read mux is the critical
+          path). **Hold is clean (0 vios)** — the unfixable-post-fab one. Setup is a
+          non-issue for an audio synth that advances on a ~48 kHz `sample_tick`; the
+          real operational clock is far below 25 MHz (future: pipeline the mux or use
+          an SRAM macro to close 25 MHz). Curated deliverable extracted to repo
+          `final/` (gitignored): gds, klayout_gds, nl/pnl, spice, def, lib, sdc, render,
+          metrics, manufacturability.rpt. Full 998 MB bundle (incl. sdf/spef/odb/mag
+          intermediates) remains in container at `/build256/final`.
 
-### ⏳ HARDENING IN FLIGHT — how to resume on a fresh session (as of 2026-06-16 ~22:40 UTC)
+> ### 🔧 BLOCKER HIT + FIXED (2026-06-17 ~03:05 UTC): missing `pmap` in container
+> Run 1 of the 256 flow produced a valid GDS (Magic/KLayout streamout, steps 56–57)
+> but **crashed at step 60 `KLayout.Antenna` with exit 2**. Root cause: the PDK's
+> KLayout **antenna + LVS** decks (`/pdk/.../klayout/tech/drc/gf180mcu.drc:53`,
+> `.../lvs/gf180mcu.lvs:74`) log memory via `` `pmap PID | tail -1`[10,40].strip ``;
+> `pmap` (procps) was **absent** in the container, so the backtick → `""`,
+> `""[10,40]` → `nil`, `nil.strip` → `NoMethodError`. (Same missing procps that broke
+> `ps` — see the `/proc` note below.) **Fix:** `nix profile install nixpkgs#procps`
+> → `pmap` now resolves via `/root/.nix-profile/bin/pmap` (on the running 1024's PATH
+> AND fresh devshells); `ps`/`pgrep` work again too. One fix covers both runs and the
+> later LVS step. Resumed the 256 `--last-run --from KLayout.Antenna` → ran clean to
+> completion.
+
+### ⏳ HARDENING STATUS — how to resume on a fresh session (updated 2026-06-17 ~04:20 UTC)
+**Live status (04:20):** ✅ **256 lean = DONE, clean signoff** (`RESUME256_EXIT=0`;
+`final/` extracted to repo — see Phase 5e + Morning report). ⏳ **1024 baseline =
+still running**, step 37/83 (post-CTS resizer), slow/optional. Use `/proc` (NOT `ps`)
+to check liveness.
+
 Rig: long-lived Docker container **`eurosynth-harden`** (`nixos/nix`; `/nix` has
-LibreLane v3.1.0.dev1 + tools). Mounts: `/work`=repo, `/pdk`=gf180mcuD PDK volume.
+LibreLane v3.1.0.dev1 + tools; **`procps` now installed** so `pmap`/`ps` work).
+Mounts: `/work`=repo, `/pdk`=gf180mcuD PDK volume.
 Run hardening as: `docker exec eurosynth-harden bash -lc 'cd <DIR> && nix develop --accept-flake-config --command bash -lc "SLOT=1x0p5 PDK_ROOT=/pdk make librelane"'`.
+Detached relaunch that survives sessions: `docker exec -d eurosynth-harden bash -lc '<script> > <log> 2>&1'`.
 
-TWO runs in flight (heavy steps run detached inside the container):
-| run | RTL | work dir | run dir | log | bg task |
+Runs (bg task IDs are from prior sessions and now dead — runs orphan to PID 1 and
+keep going; track by log sentinel + `/proc`, not by task ID):
+| run | RTL | work dir | run dir | log | sentinel |
 |---|---|---|---|---|---|
-| **1024 baseline** | older 1024 (commit a30de83) | `/build` | `/build/librelane/runs/RUN_2026-06-16_15-04-43` | `/root/resume.log` | `bqx8fftxn` |
-| **256 lean (deliverable)** | 9a4cc62 | `/build256` | `/build256/librelane/runs/RUN_*` | `/root/harden256.log` | `bz9jtf2q2` |
+| **1024 baseline** (running) | 1024 (commit a30de83) | `/build` | `/build/librelane/runs/RUN_2026-06-16_15-04-43` | `/root/resume.log` | `RESUME_EXIT=` |
+| **256 lean** ✅ DONE | 9a4cc62 | `/build256` | `/build256/librelane/runs/RUN_2026-06-16_22-40-18` | `/root/harden256.log` then `/root/resume256.log` | `RESUME256_EXIT=0` |
+
+⚠️ **`ps`/`pgrep` ARE BROKEN in this container** (procps reports only PID 1 / "1
+process" even while flows run — nearly caused a wrongful relaunch that would have
+`rm -rf`'d a live run). To check process liveness, **enumerate `/proc` directly**:
+`docker exec eurosynth-harden bash -lc 'for p in /proc/[0-9]*; do tr "\0" " " < $p/cmdline; echo; done | grep -E "openroad|librelane|make"'`.
+A running flow shows `…/bin/python3.13 …librelane…` + an `openroad`/`yosys` child.
+
+⚠️ **Do NOT relaunch a run that is still alive.** `harden256.sh` begins with
+`rm -rf /build256` — re-running it destroys an in-progress 256 run. Confirm via
+`/proc` that the flow is dead AND that no exit sentinel will appear before relaunch.
 
 Check status (fresh session):
 - `docker exec eurosynth-harden bash -lc 'tail -30 /root/harden256.log'` (and `/root/resume.log`).
-  Success sentinels: `HARDEN256_EXIT=0` / `RESUME_EXIT=0`. Step progress:
+  Success sentinels: `HARDEN256_EXIT=0` / `RESUME_EXIT=0` (or `RESUME2_EXIT=0`).
+  Step progress:
   `docker exec eurosynth-harden bash -lc 'ls -1dt /build256/librelane/runs/*/[0-9][0-9]-*/ | head'`.
 - GDS when done: `docker exec eurosynth-harden ls -la /build256/final/` (look for `final/gds/chip_top.gds`).
   Extract: `docker cp eurosynth-harden:/build256/final <repo>/final` (final/ is gitignored — large binary).
@@ -153,5 +208,54 @@ reports/`*.rpt`/metrics; copy the GDS out; then Phase 4c (morning report + final
 - phase3b/chip_core 1x0p5 pin map → a0fe78b
 - phase1b'/template import (1x0p5, KS in config) → (this commit)
 
-## Morning report
-_(written by the final chunk)_
+## Morning report  (2026-06-17, autonomous run)
+
+**Headline: the lean Karplus-Strong chip hardened to a clean, manufacturable GDSII.** 🎉
+
+### What you have
+- **RTL, bit-exact & verified** (standalone Icarus rail, all green and committed):
+  KS engine `256/256` samples == golden, spine `SPINE OK`, `chip_core` 1x0p5
+  `ELAB OK`. (Phases 0–4 + lean 256 variant; see commit log.)
+- **GDSII (the new thing tonight):** the 256-deep KS design (`SLOT=1x0p5`,
+  `DESIGN_NAME=chip_top`) ran RTL→GDSII through LibreLane v3.1.0.dev1 on gf180mcuD
+  and **passed full physical signoff**:
+  | Check | Result |
+  |---|---|
+  | Magic DRC / KLayout DRC / routing DRC / density | **0 / 0 / 0 / 0** |
+  | LVS (Netgen) — device/net/pin diffs, errors | **0 / 0 / 0 / 0** (layout == netlist) |
+  | Antenna (violating nets/pins) | **0 / 0** |
+  | Power grid (PDN) | **0** |
+  | manufacturability.rpt | **Antenna ✅ · LVS ✅ · DRC ✅** |
+  - **Deliverable bundle** copied to repo `final/` (gitignored): `gds/chip_top.gds`
+    (112 MB), klayout GDS, netlists (`nl`/`pnl`), SPICE, DEF, `.lib` (9 corners),
+    SDC, render PNG, `metrics.json/csv`, `manufacturability.rpt`. Full 998 MB run
+    output (sdf/spef/odb/mag) is retained in the container at `/build256/final`.
+  - **One caveat — setup timing:** WNS −21.7 ns against the template's default
+    25 MHz `clk_PAD` constraint (the 256:1 delay-line read mux is the long path).
+    **Hold is clean** (the post-fab-fatal kind). For an audio synth advancing on a
+    ~48 kHz `sample_tick` this is a non-issue — drive `clk_PAD` well under 25 MHz, or
+    later pipeline the mux / move the line into an SRAM macro to close 25 MHz.
+
+### What happened overnight (notable)
+1. **`ps` is broken in the harden container** — it reports "1 process" even with
+   flows running. I almost concluded the runs had died and relaunched them; that
+   would have `rm -rf`'d a live run. Verified liveness via `/proc` instead — both
+   runs were healthy the whole time. (Documented in the resume guide above + memory.)
+2. **Missing `pmap` blocked signoff.** The PDK's KLayout antenna+LVS decks call
+   `pmap` for memory logging; it was absent → `nil.strip` Ruby crash at step 60.
+   Fixed with `nix profile install nixpkgs#procps` (also un-broke `ps`), then resumed
+   the flow `--from KLayout.Antenna`. Clean to completion. (See the 🔧 note in Phase 5.)
+
+### 1024 baseline (optional/bonus)
+Still running at step 37/83 (post-CTS timing resizer) as of ~04:18 UTC, grinding
+~16 400 violating endpoints from the 1024:1 mux; may not converge and adds no new
+manufacturability info beyond the 256. Left running; not a blocker. If it finishes,
+its `final/` GDS is at `/build256`→`/build/final` (run dir `RUN_2026-06-16_15-04-43`).
+
+### Suggested next steps (human)
+1. Open `final/gds/chip_top.gds` in your local KLayout to eyeball the layout, and
+   `final/render/chip_top.png` for a quick look.
+2. If happy, merge `overnight/karplus-strong` → `main`.
+3. Timing: decide the real `clk_PAD` target (audio needs ≪25 MHz). If you want
+   25 MHz closure, that's an architecture task (pipeline the tap mux / SRAM macro),
+   not a re-run knob.

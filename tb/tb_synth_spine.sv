@@ -48,9 +48,10 @@ module tb_synth_spine;
     reg        ws_seen = 1'b1;
 
     integer checks = 0, fails = 0;
-    reg ks_nonzero = 1'b0;   // set if any KS-voice (voice_sel==4) frame decodes non-zero
-    reg ch_nonzero = 1'b0;   // set if any chaos-voice (voice_sel==5) frame decodes non-zero
-    reg bb_nonzero = 1'b0;   // set if any bytebeat-voice (voice_sel==6) frame decodes non-zero
+    reg ks_nonzero  = 1'b0;  // set if any KS-voice (voice_sel==4) frame decodes non-zero
+    reg sid_nonzero = 1'b0;  // set if any SID-voice (voice_sel==3) frame decodes non-zero
+    reg ch_nonzero  = 1'b0;  // set if any chaos-voice (voice_sel==5) frame decodes non-zero
+    reg bb_nonzero  = 1'b0;  // set if any bytebeat-voice (voice_sel==6) frame decodes non-zero
 
     always @(posedge clk) begin
         bclk_d <= i2s_bclk;
@@ -62,9 +63,10 @@ module tb_synth_spine;
         ws_seen <= i2s_ws;
         if (ws_seen == 1'b0 && i2s_ws == 1'b1 && rst_n) begin
             checks = checks + 1;
-            if (voice_sel == 3'd4 && rx_acc !== 0) ks_nonzero <= 1'b1;
-            if (voice_sel == 3'd5 && rx_acc !== 0) ch_nonzero <= 1'b1;
-            if (voice_sel == 3'd6 && rx_acc !== 0) bb_nonzero <= 1'b1;
+            if (voice_sel == 3'd4 && rx_acc !== 0) ks_nonzero  <= 1'b1;
+            if (voice_sel == 3'd3 && rx_acc !== 0) sid_nonzero <= 1'b1;
+            if (voice_sel == 3'd5 && rx_acc !== 0) ch_nonzero  <= 1'b1;
+            if (voice_sel == 3'd6 && rx_acc !== 0) bb_nonzero  <= 1'b1;
             if (rx_acc === sample_dbg) begin
                 $display("  frame %0d: DAC decoded %0d  (intended %0d)  OK",
                          checks, rx_acc, sample_dbg);
@@ -96,9 +98,18 @@ module tb_synth_spine;
         voice_sel = 3'd2;
         wait_frames(6);
 
-        $display("\n[4] Voice 3 = silence (unused engine slot):");
-        voice_sel = 3'd3;
-        wait_frames(4);
+        $display("\n[4] Voice 3 = SID 3-voice (configured over SPI, then selected):");
+        spi_write(8'h12, 16'h8000);     // v0: saw,      pw=0x80
+        spi_write(8'h13, 16'h8009);     // v1: triangle + ring (bit3), pw=0x80
+        spi_write(8'h14, 16'h4002);     // v2: pulse,    pw=0x40
+        bypass_en = 1'b0; voice_sel = 3'd3;
+        wait_frames(8);
+        if (!sid_nonzero) begin
+            fails = fails + 1;
+            $display("  [4] FAIL: SID voice produced only silence (sid_nonzero never set)");
+        end else begin
+            $display("  [4] OK: SPI config + SID reached the serializer with non-zero output");
+        end
 
         $display("\n[5] Voice 4 = Karplus-Strong (pluck then select):");
         ks_period = 10'd16;

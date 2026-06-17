@@ -161,6 +161,9 @@ module synth_spine #(
     localparam NREG       = 128;
     localparam A_BYTEBEAT = 'h10;          // config word: bytebeat (voice 6)
     localparam A_CHAOS    = 'h11;          // config word: chaos    (voice 5)
+    localparam A_SID0     = 'h12;          // config word: SID voice 0 (voice 3)
+    localparam A_SID1     = 'h13;          // config word: SID voice 1
+    localparam A_SID2     = 'h14;          // config word: SID voice 2
     wire [NREG*16-1:0] cfg_flat;
     wire        cfg_we;
     wire [6:0]  cfg_addr;
@@ -193,6 +196,26 @@ module synth_spine #(
         .sample(chaos_sample)
     );
 
+    // Voice 3: SID-homage 3 voices. Per-voice timbre from config 0x12-0x14;
+    // the 3 phase increments come from the shared 10-bit pitch bus (ks_period),
+    // with a small detune on v1 and v2 one octave down -> a playable patch.
+    wire [15:0] cfg_sid0 = cfg_flat[A_SID0*16 +: 16];
+    wire [15:0] cfg_sid1 = cfg_flat[A_SID1*16 +: 16];
+    wire [15:0] cfg_sid2 = cfg_flat[A_SID2*16 +: 16];
+    wire [15:0] pitch16  = {ks_period, 6'b0};        // 10-bit pitch -> 16-bit phase inc
+    wire signed [15:0] sid_sample;
+    sid_engine u_sid (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .v0_freq(pitch16),
+        .v1_freq(pitch16 + 16'd97),                  // slight detune (chorus)
+        .v2_freq({1'b0, pitch16[15:1]}),             // one octave down
+        .v0_wave(cfg_sid0[2:0]), .v1_wave(cfg_sid1[2:0]), .v2_wave(cfg_sid2[2:0]),
+        .v0_pw  (cfg_sid0[15:8]), .v1_pw(cfg_sid1[15:8]), .v2_pw(cfg_sid2[15:8]),
+        .ring_en({cfg_sid2[3], cfg_sid1[3], cfg_sid0[3]}),  // bit i -> voice i
+        .sync_en({cfg_sid2[4], cfg_sid1[4], cfg_sid0[4]}),
+        .sample(sid_sample)
+    );
+
     // ---------------------------------------------------------------------
     // Voice-select mux: ONE source reaches the output at a time.
     // ---------------------------------------------------------------------
@@ -202,6 +225,7 @@ module synth_spine #(
             3'd0:    sel_sample = ramp;
             3'd1:    sel_sample = osc_saw;
             3'd2:    sel_sample = osc_sq;
+            3'd3:    sel_sample = sid_sample;
             3'd4:    sel_sample = ks_sample;
             3'd5:    sel_sample = chaos_sample;
             3'd6:    sel_sample = bb_sample;

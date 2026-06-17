@@ -109,10 +109,14 @@ nix binary cache (prebuilt, not source-compiled). Commands run via
           caveat; smaller NMAX or SRAM macro would slash this). Re-running via
           **resume** (`--last-run --from OpenROAD.GeneratePDN`) to skip the 6 h
           synthesis. **Status 2026-06-17 ~04:18 UTC: still grinding — at step 37/83
-          (`OpenROAD.ResizerTimingPostCTS`) for ~1.5 h.** The post-CTS resizer is
+          (`OpenROAD.ResizerTimingPostCTS`) for ~6.5 h — WEDGED.** The post-CTS resizer is
           churning on ~16 400 violating endpoints (WNS ~−54 ns vs 40 ns clock) from
-          the 1024:1 mux; it improves WNS only marginally per iteration and may not
-          converge. **LOWER PRIORITY now** — the 256 lean (5e) is the proven clean
+          the 1024:1 mux; it improves WNS only marginally (-53.6 to -44.0 ns over 5 h, ~10 ns/5 h) and CANNOT
+          converge (1024:1 mux path is architecturally too long; buffering won't fix
+          it). Finishing the flow would be ~12-24 h more for a predictably
+          inferior-to-256 result. **Per human call (2026-06-17 ~09:30 UTC): LEFT
+          RUNNING** to capture its GDS if it ever completes (orphaned to PID 1,
+          survives sessions). Not a blocker; the 256 (5e) remains the deliverable. **LOWER PRIORITY now** — the 256 lean (5e) is the proven clean
           deliverable, and the 1024 is the *same architecture* (just NMAX 1024) so it
           adds no new manufacturability info, only a slower variant with worse setup.
           Left running (no contention; pmap wall at step 60 is pre-fixed) — if it

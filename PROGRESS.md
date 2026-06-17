@@ -7,6 +7,15 @@ work. See [PLAN.md](PLAN.md) for chunk definitions/resume and
 Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` blocked
 
 ---
+> ### 🚀 NEW DIRECTION (2026-06-17): full engine roster on branch `engines/kitchen-sink`
+> The 256 GDSII deliverable shipped (clean signoff; see Phase 5e). The 1024 baseline
+> was **stopped** per human call. New work adds the remaining roadmap engines —
+> **Bytebeat, Chaos, SID, Neural morphing oscillator** — plus an **SPI config port**,
+> all on branch **`engines/kitchen-sink`**. **Plan + live status + resume steps:
+> [docs/engines_plan.md](docs/engines_plan.md).** Build method: **parallel subagents,
+> one per isolated engine, self-verifying; main integrates into the spine.** Engines
+> not started yet as of this handoff.
+---
 > ### 🎯 TARGET SLOT CHANGED: `1x1` → `1x0p5` (half slot)
 > Pad budget is now **4 input / 46 bidir / 4 analog** (was 12/40/2). Only 4 input
 > pads → `voice_sel[2:0]` + `bypass_en` fill them; KS `pluck`/`period` (and future

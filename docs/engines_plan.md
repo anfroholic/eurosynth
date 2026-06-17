@@ -92,3 +92,26 @@ Bytebeat → SPI config port → Chaos → SID → Neural → full integration �
 - Regression after each wire-in: spine TB + `chip_core` elaboration stay green.
 - Hardening (full multi-engine GDSII) is a **follow-up** — 5 engines is tight on the
   half-slot; may want a larger slot. This branch leaves the tree hardening-ready.
+
+---
+
+## Status / resume (as of 2026-06-17, fresh-context handoff)
+- **Branch:** `engines/kitchen-sink` (off `overnight/karplus-strong`; has spine + KS +
+  showcase docs). 1024 hardening baseline was **stopped** per human; the 256 GDSII
+  deliverable is done on the previous branch.
+- **Done:** this plan committed. **Engines: NOT started yet.** Verify loop confirmed
+  (`KS OK`, 0 mismatches), numpy 2.2.6 available (no torch — train neural in numpy).
+- **NEXT (do this with PARALLEL SUBAGENTS — one per isolated engine):** each subagent
+  writes ONLY its own new files (`src/<eng>.sv`, `models/<eng>_ref.py`,
+  `models/<eng>_golden.hex`, `tb/tb_<eng>.sv`), reads `src/ks_engine.sv` /
+  `models/ks_ref.py` / `tb/tb_ks_engine.sv` as the style template, and **self-verifies**
+  via `bash scripts/sim.sh ...` to `0 mismatches` before returning a CONCISE report
+  (final port list + verify result + control mapping). The main session must NOT let
+  subagents edit `synth_spine.sv` / `chip_core.sv` (integration is serial, in main):
+  after each engine verifies standalone, main wires it into the spine mux + drives its
+  params from the pin bus / SPI config, re-runs the spine regression, and commits.
+- **Build order:** Bytebeat (voice 6) → SPI config port → Chaos (voice 5) →
+  SID (voice 3) → Neural morphing osc (voice 7) → full integration (chip_core pin map
+  + SPI pins) → docs update (SHOWCASE / HARDWARE_GUIDE / NOTES / pinout SVG).
+- **Verify commands** are in the "Verification" section above; `scripts/sim.sh` wraps
+  the Docker `eurosynth-sim` Icarus image (no PDK needed).

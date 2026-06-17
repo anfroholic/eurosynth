@@ -34,6 +34,19 @@ VERILOG_FILES:
 - dir::../src/chip_core.sv
 - dir::../src/synth_spine.sv
 - dir::../src/ks_engine.sv
+- dir::../src/spi_config.sv
+- dir::../src/bytebeat.sv
+- dir::../src/chaos_engine.sv
+- dir::../src/sid_voice.sv
+- dir::../src/sid_engine.sv
+- dir::../src/neural_osc.sv
+# NOTE: neural_osc reads models/neural_weights.hex via $readmemh at elaboration.
+# For a hardening run the synthesizer cwd is the run dir, not the repo root, so
+# that relative path must be made absolute (set the neural_osc WFILE param, or
+# convert the weights to localparam initial values) before a GDSII flow. The
+# standalone/spine/chip_core simulation rail runs from the repo root, where the
+# relative path resolves. Full multi-engine hardening is a follow-up (see
+# docs/engines_plan.md "Verification": 5 engines is tight on the half slot).
 
 # Enable plugin for better SystemVerilog support
 # USE_SLANG: True

@@ -118,6 +118,12 @@ def chip_top_runner():
         sources.append(proj_path / "../src/chip_core.sv")
         sources.append(proj_path / "../src/synth_spine.sv")
         sources.append(proj_path / "../src/ks_engine.sv")
+        sources.append(proj_path / "../src/spi_config.sv")
+        sources.append(proj_path / "../src/bytebeat.sv")
+        sources.append(proj_path / "../src/chaos_engine.sv")
+        sources.append(proj_path / "../src/sid_voice.sv")
+        sources.append(proj_path / "../src/sid_engine.sv")
+        sources.append(proj_path / "../src/neural_osc.sv")
 
     sources += [
         # IO pad models

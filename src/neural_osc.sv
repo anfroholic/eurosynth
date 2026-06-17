@@ -132,18 +132,21 @@ module neural_osc #(
     // Sine LUT lookup for harmonic `h` (1..4): index = top 8 bits of
     // (h * phase) mod 2^PHASE_W. The multiply is done at full width then masked.
     // ---------------------------------------------------------------------
-    function automatic [PHASE_W-1:0] harm_phase(input [2:0] h);
+    // Pure functions: `ph` is passed in explicitly (NOT read from the module
+    // `phase` reg) so yosys does not treat these as constant functions that
+    // reference a non-constant signal. Callers pass the current `phase`.
+    function automatic [PHASE_W-1:0] harm_phase(input [PHASE_W-1:0] ph, input [2:0] h);
         reg [PHASE_W+2:0] prod;
         begin
-            prod = phase * h;                       // up to 4*phase, wraps mod 2^PHASE_W
+            prod = ph * h;                          // up to 4*phase, wraps mod 2^PHASE_W
             harm_phase = prod[PHASE_W-1:0];
         end
     endfunction
 
-    function automatic [7:0] lut_index(input [2:0] h);
+    function automatic [7:0] lut_index(input [PHASE_W-1:0] ph, input [2:0] h);
         reg [PHASE_W-1:0] hp;
         begin
-            hp = harm_phase(h);
+            hp = harm_phase(ph, h);
             lut_index = hp[PHASE_W-1 -: 8];          // top 8 bits
         end
     endfunction
@@ -198,10 +201,10 @@ module neural_osc #(
                 // available from the next clk, which is when S_FEAT runs).
                 S_FEAT: begin
                     case (feat_idx)
-                        4'd0: act[0] <= $signed(mem[lut_index(3'd1)]);
-                        4'd1: act[1] <= $signed(mem[lut_index(3'd2)]);
-                        4'd2: act[2] <= $signed(mem[lut_index(3'd3)]);
-                        4'd3: act[3] <= $signed(mem[lut_index(3'd4)]);
+                        4'd0: act[0] <= $signed(mem[lut_index(phase, 3'd1)]);
+                        4'd1: act[1] <= $signed(mem[lut_index(phase, 3'd2)]);
+                        4'd2: act[2] <= $signed(mem[lut_index(phase, 3'd3)]);
+                        4'd3: act[3] <= $signed(mem[lut_index(phase, 3'd4)]);
                         default: act[4] <= morph_feat;
                     endcase
                     if (feat_idx == N_IN[3:0] - 1) begin

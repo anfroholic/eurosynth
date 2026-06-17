@@ -259,13 +259,40 @@ main.
           (`BCLK_DIV=16` ≈ 1024 clk/frame ≫ 139-clk MAC). ✅
 - [x] Eg  RTL registered in librelane `VERILOG_FILES` + cocotb sources. ✅ (commit f393d2e)
 
-> **Follow-ups (not on this branch):** (1) Full multi-engine GDSII hardening is a
-> follow-up — 5 engines is tight on the half slot (may want a larger slot); the tree is
-> left hardening-ready (all RTL in `config.yaml`). The prior 256 KS-only clean signoff
-> (Phase 5e) stands on the previous branch; this branch is RTL + verification only.
-> (2) Before any hardening run, `neural_osc`'s `$readmemh` weight path must be made
-> **absolute** (synth cwd is the run dir, not repo root) — set the `WFILE` param or
-> convert weights to `localparam` initial values.
+> **Follow-up:** Full multi-engine GDSII hardening — 5 engines is tight on the half
+> slot (may want a larger slot); the tree is hardening-ready (all RTL in `config.yaml`).
+> The prior 256 KS-only clean signoff (Phase 5e) stands on the previous branch. A
+> full-roster hardening attempt is now IN FLIGHT — see Phase F.
+
+## Phase F — full-roster GDSII hardening attempt (`engines/kitchen-sink`)  ⏳ RUNNING
+Hardening prep done, then a full-roster `make librelane` (SLOT=1x0p5, gf180mcuD)
+launched detached in the `eurosynth-harden` container.
+- [x] Fa  **Neural weights synthesis-safe** — `$readmemh` baked into RTL via generated
+          `src/neural_weights_init.svh` (`\`include`, 385 words, bit-identical to the
+          hex). Removes the cwd-relative file dependency. ✅ (commit aca1c77)
+- [x] Fb  **yosys-frontend fix** — `neural_osc` LUT helpers made pure (pass `phase` as
+          an arg) so yosys stops rejecting "Non-constant expression in constant
+          function". yosys now reads + elaborates the whole `chip_core` hierarchy
+          (5 engines + SPI), `check` = **0 problems**. Bit-exact preserved (NEURAL/
+          SPINE/ELAB green). ✅ (commit a5b674a)
+- [~] Fc  **`make librelane` RUNNING** — detached run, survives sessions (orphans to
+          PID 1). Cleared lint + jsonheader; now in **step 06 yosys-synthesis** (grinding
+          the KS `line[]` delay line + neural LUT/weight flop arrays — the slow step,
+          ~hours, as in the 256 run). Setup timing WILL violate at 25 MHz (expected /
+          acceptable for this audio chip; hold is the fatal one); **area/fit on the half
+          slot is the open question** — placement (later) decides. May complete or strain.
+  - Rig: container **`eurosynth-harden`** (`nixos/nix`; LibreLane v3.1.0.dev1 + tools +
+    PDK at `/pdk`). NOTE: this non-interactive shell needs
+    `nix --extra-experimental-features "nix-command flakes" develop` (the bare
+    `nix develop` errors "flakes disabled"); `sed`/`ps`/`pgrep` are NOT on PATH — use
+    `/proc` enumeration for liveness.
+  - Build dir `/buildroster` (fresh copy of the repo at commit a5b674a). Run dir
+    `/buildroster/librelane/runs/RUN_2026-06-17_13-49-44`. Launch script
+    `/root/harden_roster.sh`. Log `/root/harden_roster.log`, sentinel `ROSTER_EXIT=`.
+  - Check (fresh session): liveness via
+    `docker exec eurosynth-harden bash -lc 'for p in /proc/[0-9]*; do tr "\0" " " < $p/cmdline 2>/dev/null; echo; done | grep -E "yosys|openroad|make"'`;
+    progress `tail -20 /root/harden_roster.log` + `ls -1dt /buildroster/librelane/runs/RUN_*/[0-9][0-9]-*/`.
+    GDS when done: `/buildroster/final/gds/chip_top.gds` (extract with `docker cp`).
 
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)

@@ -307,6 +307,22 @@ a ~48 kHz audio chip (drive `clk_PAD` <<25 MHz), but worse than the 256 (more lo
 paths from the MLP MAC / chaos multipliers). Resume run dir
 `/buildroster/librelane/runs/RUN_2026-06-17_13-49-44`; logs `/root/harden_roster.log` +
 `/root/resume_roster.log` (sentinel `ROSTER2_EXIT=0`).
+
+- [~] Fe  **Antenna clear — IN PROGRESS (re-place).** Root cause pinned: the residual is
+          one net (`net16049`, side-area ratio 400) needing one diode (`ANTENNA_152`) that
+          detailed placement **can't legalize** — locally congested by the gate. It is a
+          PLACEMENT problem, not routing: bumping `DRT_ANTENNA_REPAIR_*` 10/10→20/40 caused
+          `DPL-0036` (diode unplaceable) and was reverted to 10/10 (commit 409144b). **Human
+          chose to retry via a re-place** (~3-4 h). Plan: enable heuristic diode insertion
+          (verify var name, e.g. `RUN_HEURISTIC_DIODE_INSERTION: true`) and/or lower
+          `PL_TARGET_DENSITY_PCT` 35→30 so diodes place during global placement with room;
+          resume `--last-run --from OpenROAD.GlobalPlacement` in `/buildroster` (re-runs GP →
+          DP → CTS → **post-CTS resizer (watch — historically slow)** → route → DRC → antenna
+          → LVS → final). **Docker was flaky (human may restart);** after restart just
+          `docker start eurosynth-harden` (do NOT `docker rm` it — `/buildroster` cached run +
+          `/nix` live in its writable layer). Fallback: **waive the 1 antenna net** (common
+          for shuttle/edu; roster-v1 is otherwise DRC/LVS/hold clean). Deliverables on host:
+          `final_roster/` = roster-v1; rename `final/`→`final_256ks/` pending KLayout close.
   - Rig: container **`eurosynth-harden`** (`nixos/nix`; LibreLane v3.1.0.dev1 + tools +
     PDK at `/pdk`). NOTE: this non-interactive shell needs
     `nix --extra-experimental-features "nix-command flakes" develop` (the bare

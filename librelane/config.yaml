@@ -93,12 +93,13 @@ GRT_ALLOW_CONGESTION: true
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200
 
-# Fix antenna violations after DRT. Bumped 10/10 -> 20/40 to clear the residual
-# net16049 (side-area antenna ratio 400 VIOLATED -> 4 KLayout ANT.16 violations)
-# left by the first full-roster route. More iters + bigger margin = more
-# aggressive jogging/diode insertion during detailed routing.
-DRT_ANTENNA_REPAIR_ITERS: 20
-DRT_ANTENNA_REPAIR_MARGIN: 40 # %
+# Fix antenna violations after DRT. (Tried 20/40 to clear residual net16049, but
+# the lone repair diode ANTENNA_152 has no legal site near the gate -> DPL-0036.
+# Margin doesn't help: it's a local-congestion / placement problem, not a routing
+# one. Clearing it needs a re-place with more local whitespace or heuristic diode
+# insertion. Back to the known-good 10/10 that the full run completed on.)
+DRT_ANTENNA_REPAIR_ITERS: 10
+DRT_ANTENNA_REPAIR_MARGIN: 10 # %
 
 # PDN
 PDN_CFG: dir::pdn/pdn_cfg.tcl

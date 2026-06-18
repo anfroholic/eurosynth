@@ -93,19 +93,15 @@ GRT_ALLOW_CONGESTION: true
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200
 
-# Fix antenna violations after DRT. Known-good 10/10 (the full run completed on it).
-# The post-route repair alone left 1 unplaceable diode for net16049 (DPL-0036 when
-# pushed harder) -> we instead pre-empt it with heuristic diode insertion below.
+# Fix antenna violations after DRT. Known-good 10/10 (the clean roster-v1 run used
+# this and netgen LVS passed). It leaves 1 residual antenna net (net16049).
+# NOTE: enabling heuristic diode insertion (RUN_HEURISTIC_DIODE_INSERTION +
+# HEURISTIC_ANTENNA_THRESHOLD: 130) DOES clear the antenna to 0/0, but the re-routed
+# netlist then fails netgen top-level *port* matching on the 46 symmetric bidir pads
+# (internals all equivalent -> a netgen symmetry artifact, not a real short/open).
+# Net trade was worse than v1's lone waivable antenna, so it's left disabled here.
 DRT_ANTENNA_REPAIR_ITERS: 10
 DRT_ANTENNA_REPAIR_MARGIN: 10 # %
-
-# Heuristic (proactive) diode insertion: before detailed routing, drop a diode on
-# every net whose estimated wirelength exceeds the threshold (um), then legalize
-# (with displacement) as a composite step. This catches the long net16049 and gives
-# its diode a home BEFORE the stricter post-route repair runs out of room. 130 um is
-# the larger-geometry default (vs 90 for sky130). Step id: Odb.HeuristicDiodeInsertion.
-RUN_HEURISTIC_DIODE_INSERTION: true
-HEURISTIC_ANTENNA_THRESHOLD: 130 # um
 
 # PDN
 PDN_CFG: dir::pdn/pdn_cfg.tcl

@@ -1,0 +1,45 @@
+# --- simulation artifacts ---
+*.vvp
+*.vcd
+*.fst
+cocotb/sim_build/
+cocotb/results.xml
+cocotb/__pycache__/
+sim_build/
+
+# --- LibreLane / GDSII outputs (large, regenerated) ---
+librelane/runs/
+final/
+final_roster/
+
+# --- listenable audio previews (large/binary throwaways, like final/) ---
+previews/
+
+# --- PDK (cloned by `make clone-pdk`, multi-GB) ---
+.ciel/
+ciel/
+pdk/
+*.pdk
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+
+# --- editor / OS cruft ---
+.DS_Store
+Thumbs.db
+
+# --- Claude Code machine-local settings (perms allowlist lives here) ---
+.claude/settings.local.json
+
+# --- template-import additions (gf180mcu PDK lands in ./gf180mcu via Makefile PDK_ROOT) ---
+gf180mcu/
+src/generated_defines.svh
+generated_defines.svh
+*.lyrdb
+gf180_drc.lyrdb
+img/
+# ...but DO track the committed showcase diagrams / die render
+!docs/img/
+!docs/img/**

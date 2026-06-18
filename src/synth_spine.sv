@@ -25,9 +25,20 @@ module synth_spine #(
     input  wire clk,
     input  wire rst_n,                 // active low
 
-    // --- control (v0: straight from pins; SPI config comes later) ---
-    input  wire [2:0] voice_sel,       // 0=bypass ramp, 1=saw, 2=square, 3=silence
+    // --- control (real-time play on pins; deep config over SPI, below) ---
+    input  wire [2:0] voice_sel,       // 0=bypass,1=saw,2=square,3=SID,4=Karplus-Strong,5=chaos,6=bytebeat,7=neural
     input  wire       bypass_en,       // force the test ramp regardless of voice_sel
+
+    // --- Karplus-Strong control (voice 4); ks_period doubles as the shared
+    //     10-bit pitch bus for the SID/neural voices (see instances below) ---
+    input  wire       ks_pluck,        // 1-clk strobe: (re)excite the string
+    input  wire [9:0] ks_period,       // delay-line length / shared pitch (10-bit)
+
+    // --- SPI config port: deep per-engine parameters + neural weights ---
+    input  wire       spi_sclk,        // SPI slave clock          (bidir pad, in)
+    input  wire       spi_mosi,        // SPI master-out-slave-in   (bidir pad, in)
+    input  wire       spi_csn,         // SPI chip-select, active low (bidir pad, in)
+    output wire       spi_miso,        // SPI master-in-slave-out   (bidir pad, out)
 
     // --- I2S-style serial audio output (to an external DAC) ---
     output wire i2s_bclk,
@@ -132,6 +143,98 @@ module synth_spine #(
     end
     wire signed [15:0] osc_sq = sq_phase[15] ? 16'sh7FFF : -16'sh8000;
 
+    // Voice 4: Karplus-Strong plucked-string engine (advances on sample_tick).
+    wire signed [15:0] ks_sample;
+    ks_engine u_ks (
+        .clk(clk), .rst_n(rst_n),
+        .sample_tick(sample_tick),
+        .pluck(ks_pluck), .period(ks_period),
+        .sample(ks_sample)
+    );
+
+    // ---------------------------------------------------------------------
+    // SPI config port: a NREG x 16 register file written over SPI. Each engine
+    // reads its slice combinationally (config map in docs/engines_plan.md). The
+    // cfg write-event taps (cfg_we/addr/wdata) route neural weights (0x40-0x4F)
+    // straight into the neural engine's weight-load port.
+    // ---------------------------------------------------------------------
+    localparam NREG       = 128;
+    localparam A_BYTEBEAT = 'h10;          // config word: bytebeat (voice 6)
+    localparam A_CHAOS    = 'h11;          // config word: chaos    (voice 5)
+    localparam A_SID0     = 'h12;          // config word: SID voice 0 (voice 3)
+    localparam A_SID1     = 'h13;          // config word: SID voice 1
+    localparam A_SID2     = 'h14;          // config word: SID voice 2
+    localparam A_NEURAL   = 'h15;          // config word: neural morph (voice 7)
+    localparam A_NN_W_LO  = 'h40;          // neural weight-load window (0x40..0x4F)
+    localparam A_NN_W_HI  = 'h4F;
+    wire [NREG*16-1:0] cfg_flat;
+    wire        cfg_we;
+    wire [6:0]  cfg_addr;
+    wire [15:0] cfg_wdata;
+    spi_config #(.NREG(NREG)) u_spi (
+        .clk(clk), .rst_n(rst_n),
+        .spi_sclk(spi_sclk), .spi_mosi(spi_mosi), .spi_csn(spi_csn),
+        .spi_miso(spi_miso),
+        .cfg_flat(cfg_flat), .cfg_we(cfg_we), .cfg_addr(cfg_addr), .cfg_wdata(cfg_wdata)
+    );
+
+    // Voice 6: bytebeat (free-running integer formula; config 0x10).
+    wire [15:0] cfg_bytebeat = cfg_flat[A_BYTEBEAT*16 +: 16];
+    wire signed [15:0] bb_sample;
+    bytebeat u_bb (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .formula_sel(cfg_bytebeat[3:0]),   // 0x10[3:0]
+        .t_inc      (cfg_bytebeat[11:4]),  // 0x10[11:4]
+        .sample(bb_sample)
+    );
+
+    // Voice 5: chaos (fixed-point logistic / CA / Lorenz; config 0x11).
+    wire [15:0] cfg_chaos = cfg_flat[A_CHAOS*16 +: 16];
+    wire signed [15:0] chaos_sample;
+    chaos_engine u_chaos (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .map_sel(cfg_chaos[1:0]),    // 0x11[1:0]
+        .rate   (cfg_chaos[7:2]),    // 0x11[7:2]
+        .r_seed (cfg_chaos[15:8]),   // 0x11[15:8]
+        .sample(chaos_sample)
+    );
+
+    // Voice 3: SID-homage 3 voices. Per-voice timbre from config 0x12-0x14;
+    // the 3 phase increments come from the shared 10-bit pitch bus (ks_period),
+    // with a small detune on v1 and v2 one octave down -> a playable patch.
+    wire [15:0] cfg_sid0 = cfg_flat[A_SID0*16 +: 16];
+    wire [15:0] cfg_sid1 = cfg_flat[A_SID1*16 +: 16];
+    wire [15:0] cfg_sid2 = cfg_flat[A_SID2*16 +: 16];
+    wire [15:0] pitch16  = {ks_period, 6'b0};        // 10-bit pitch -> 16-bit phase inc
+    wire signed [15:0] sid_sample;
+    sid_engine u_sid (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .v0_freq(pitch16),
+        .v1_freq(pitch16 + 16'd97),                  // slight detune (chorus)
+        .v2_freq({1'b0, pitch16[15:1]}),             // one octave down
+        .v0_wave(cfg_sid0[2:0]), .v1_wave(cfg_sid1[2:0]), .v2_wave(cfg_sid2[2:0]),
+        .v0_pw  (cfg_sid0[15:8]), .v1_pw(cfg_sid1[15:8]), .v2_pw(cfg_sid2[15:8]),
+        .ring_en({cfg_sid2[3], cfg_sid1[3], cfg_sid0[3]}),  // bit i -> voice i
+        .sync_en({cfg_sid2[4], cfg_sid1[4], cfg_sid0[4]}),
+        .sample(sid_sample)
+    );
+
+    // Voice 7: neural morphing oscillator. morph from config 0x15[7:0]; pitch
+    // from the shared pitch bus. Weights load at elaboration (reset defaults) and
+    // can be overwritten over SPI: a config write into the 0x40-0x4F window is
+    // routed to the engine's weight-load port (addr 0x40 -> weight 0).
+    wire [15:0] cfg_neural = cfg_flat[A_NEURAL*16 +: 16];
+    wire        nn_w_we    = cfg_we && (cfg_addr >= A_NN_W_LO[6:0]) && (cfg_addr <= A_NN_W_HI[6:0]);
+    wire [5:0]  nn_w_addr  = cfg_addr[5:0];          // 0x40..0x4F -> 0..15
+    wire signed [15:0] nn_sample;
+    neural_osc u_neural (
+        .clk(clk), .rst_n(rst_n), .sample_tick(sample_tick),
+        .pitch(ks_period),               // shared pitch bus
+        .morph(cfg_neural[7:0]),         // 0x15[7:0]
+        .w_we(nn_w_we), .w_addr(nn_w_addr), .w_wdata(cfg_wdata),
+        .sample(nn_sample)
+    );
+
     // ---------------------------------------------------------------------
     // Voice-select mux: ONE source reaches the output at a time.
     // ---------------------------------------------------------------------
@@ -141,6 +244,11 @@ module synth_spine #(
             3'd0:    sel_sample = ramp;
             3'd1:    sel_sample = osc_saw;
             3'd2:    sel_sample = osc_sq;
+            3'd3:    sel_sample = sid_sample;
+            3'd4:    sel_sample = ks_sample;
+            3'd5:    sel_sample = chaos_sample;
+            3'd6:    sel_sample = bb_sample;
+            3'd7:    sel_sample = nn_sample;
             default: sel_sample = 16'sd0;   // silence
         endcase
     end

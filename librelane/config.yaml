@@ -93,9 +93,12 @@ GRT_ALLOW_CONGESTION: true
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200
 
-# Fix antenna violations after DRT
-DRT_ANTENNA_REPAIR_ITERS: 10
-DRT_ANTENNA_REPAIR_MARGIN: 10 # %
+# Fix antenna violations after DRT. Bumped 10/10 -> 20/40 to clear the residual
+# net16049 (side-area antenna ratio 400 VIOLATED -> 4 KLayout ANT.16 violations)
+# left by the first full-roster route. More iters + bigger margin = more
+# aggressive jogging/diode insertion during detailed routing.
+DRT_ANTENNA_REPAIR_ITERS: 20
+DRT_ANTENNA_REPAIR_MARGIN: 40 # %
 
 # PDN
 PDN_CFG: dir::pdn/pdn_cfg.tcl

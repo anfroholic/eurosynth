@@ -93,15 +93,15 @@ GRT_ALLOW_CONGESTION: true
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200
 
-# Fix antenna violations after DRT, 10/10 (the clean roster-v1 baseline).
-# net16049 (a high-fanout dlyb_1 net) was the lone residual: its repair DIODE has no
-# legal site (DPL-0036), and heuristic diode insertion clears it but floods 756 diodes
-# (util 57.5->62.9%) and breaks netgen pad port-matching. Instead, fix antennas with
-# JUMPERS (hop the net to a higher metal layer) — no diode cell, no util bump, route
-# stays close to v1 -> best shot at antenna 0 AND clean netgen LVS.
+# Fix antenna violations after DRT, 10/10 (the clean roster-v1 baseline, netgen-LVS-clean).
+# net16049 (a high-fanout dlyb_1 net = a FOUNDRY standard cell) was the lone residual.
+# As of PDK 019cf7a3 (template 1.5.3) the foundry-stdcell antenna-insertion fix from the
+# wafer.space PDK fork is ported in, which targets exactly this cell class -> expected to
+# clear net16049 at the PDK level. Keep the known-good 10/10 diode repair (do NOT force
+# JUMPER_ONLY: it would block the PDK's diode-based antenna strategy and is untested vs
+# netgen). This is the closest-to-v1 config -> best shot at antenna 0 AND clean LVS.
 DRT_ANTENNA_REPAIR_ITERS: 10
 DRT_ANTENNA_REPAIR_MARGIN: 10 # %
-DRT_ANTENNA_REPAIR_JUMPER_ONLY: true
 
 # PDN
 PDN_CFG: dir::pdn/pdn_cfg.tcl

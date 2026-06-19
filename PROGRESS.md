@@ -16,7 +16,8 @@ Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` b
 > one per isolated engine, self-verifying; main integrates into the spine.**
 > **STATUS: roster COMPLETE + verified** — all 4 engines + SPI built, bit-exact
 > standalone, integrated into the spine, full regression green (see Phase E below).
-> Full multi-engine GDSII hardening remains a follow-up (not on this branch).
+> **Full multi-engine GDSII hardening is now DONE on this branch** — clean signoff
+> (DRC/LVS/antenna/hold all 0), deliverable `final_roster_v7/`. See Phase F below.
 ---
 > ### 🎯 TARGET SLOT CHANGED: `1x1` → `1x0p5` (half slot)
 > Pad budget is now **4 input / 46 bidir / 4 analog** (was 12/40/2). Only 4 input
@@ -264,7 +265,7 @@ main.
 > The prior 256 KS-only clean signoff (Phase 5e) stands on the previous branch. A
 > full-roster hardening attempt is now IN FLIGHT — see Phase F.
 
-## Phase F — full-roster GDSII hardening attempt (`engines/kitchen-sink`)  ⏳ RUNNING
+## Phase F — full-roster GDSII hardening (`engines/kitchen-sink`)  ✅ COMPLETE — CLEAN SIGNOFF
 Hardening prep done, then a full-roster `make librelane` (SLOT=1x0p5, gf180mcuD)
 launched detached in the `eurosynth-harden` container.
 - [x] Fa  **Neural weights synthesis-safe** — `$readmemh` baked into RTL via generated
@@ -308,7 +309,31 @@ paths from the MLP MAC / chaos multipliers). Resume run dir
 `/buildroster/librelane/runs/RUN_2026-06-17_13-49-44`; logs `/root/harden_roster.log` +
 `/root/resume_roster.log` (sentinel `ROSTER2_EXIT=0`).
 
-- [~] Fe  **Antenna clear — IN PROGRESS (re-place).** Root cause pinned: the residual is
+- [x] Fe  **Antenna clear — DONE ✅ (run ROSTER7, finished 2026-06-18 20:55 UTC,
+          `ROSTER7_EXIT=0`).** The residual `net16049` is **cleared → antenna 0 nets / 0 pins**.
+          What fixed it: adopt **project-template 1.5.3** (foundry antenna fix + CoB pad fix,
+          commit 3bea219) + **jumper-only DRT antenna repair** (commit 95569b2); an earlier
+          heuristic-diode attempt cleared the antenna but broke LVS ports and was reverted
+          (commits 7d3b3bf/b71c619). **Full signoff (from `final_roster_v7/metrics.json`
+          + manufacturability.rpt):** Magic DRC **0**, KLayout DRC **0**, routing DRC **0**,
+          **antenna 0/0**, **LVS Passed** (0 diffs), **hold 0 violations** (WS +0.068 ns
+          worst corner). Setup still violated at 25 MHz (WNS −24.9 ns, 15 707 vio worst
+          corner) — expected/non-issue for a ~48 kHz audio chip. Util 57.8%, 244 449 insts,
+          101 antenna diodes. Deliverable extracted to repo **`final_roster_v7/`** (gitignored):
+          gds (135 MB), def, nl, pnl, sdc, render, metrics, manufacturability.rpt. The older
+          `final_roster/` (1 antenna vio) is superseded. Run dir
+          `/buildroster/librelane/runs/RUN_2026-06-18_12-15-17`; log `/root/harden_v2.log`
+          (sentinel `ROSTER7_EXIT=0`); full bundle stays in container at `/buildroster/final`.
+- [x] Ff  **CoB precheck — DONE ✅ PASS (2026-06-19).** Ran `gf180mcu-precheck` 1.7.0 `--cob`
+          on `final_roster_v7/gds/chip_top.gds` (slot 1x0p5, top `chip_top`):
+          **slot size ✅, CoB pad mask "matches!" ✅, Magic DRC clear ✅, KLayout density clear ✅,
+          KLayout DRC clear ✅** → `Precheck successfully completed`, EXIT=0. Confirms CoB
+          packaging compatibility (the template-1.5.3 padring fix did its job). Gotchas (see
+          memory [[eurosynth-precheck-cob]]): `--dir` must pre-exist; `--workers max` OOMs the
+          KLayout DRC decks on this 135 MB layout — use `--workers 6`. **`final_roster_v7/` is
+          the fully signed-off, CoB-compatible deliverable** (only known caveat: setup timing
+          at 25 MHz, a non-issue for a ~48 kHz audio chip).
+          --- historical (the re-place plan that led here): Root cause pinned: the residual was
           one net (`net16049`, side-area ratio 400) needing one diode (`ANTENNA_152`) that
           detailed placement **can't legalize** — locally congested by the gate. It is a
           PLACEMENT problem, not routing: bumping `DRT_ANTENNA_REPAIR_*` 10/10→20/40 caused
@@ -353,6 +378,13 @@ paths from the MLP MAC / chaos multipliers). Resume run dir
 - phaseE/SID homage (voice 3) → 71268ab
 - phaseE/neural morphing osc (voice 7) → 6182c2c
 - phaseE/register engine RTL in librelane VERILOG_FILES + cocotb → f393d2e
+- phaseFa/neural weights synthesis-safe (`\`include`) → aca1c77
+- phaseFb/yosys-frontend fix (pure LUT helpers) → a5b674a
+- phaseFd/KLayout DRC workers cap (OOM fix) → cfd7e88
+- phaseFe/antenna: heuristic diodes on → 7d3b3bf; reverted (broke LVS ports) → b71c619
+- phaseFe/antenna: jumper-only DRT repair (clears net16049) → 95569b2
+- phaseFe/adopt project-template 1.5.3 (CoB pad + foundry antenna fix) → 3bea219
+  → **run ROSTER7 = clean full-roster signoff; deliverable `final_roster_v7/`**
 
 ## Morning report  (2026-06-17, autonomous run)
 

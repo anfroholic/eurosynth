@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EuroSynth — voices in your browser (PyScript)</title>
+
+<!-- PyScript 2026.3.1 (Pyodide / real CPython in WebAssembly) -->
+<link rel="stylesheet" href="https://pyscript.net/releases/2026.3.1/core.css" />
+<script type="module" src="https://pyscript.net/releases/2026.3.1/core.js"></script>
+
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c232d; --edge:#2b3340;
+    --ink:#e6edf3; --dim:#9aa7b4; --accent:#7ee787;
+    --accent2:#79c0ff; --warn:#f0883e; --bad:#ff7b72;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  header {
+    padding:28px 22px 16px; max-width:1080px; margin:0 auto;
+  }
+  h1 { margin:0 0 4px; font-size:26px; letter-spacing:.3px; }
+  h1 .chip { color:var(--accent); }
+  .sub { color:var(--dim); max-width:760px; }
+  .sub code { color:var(--accent2); background:#0b1018; padding:1px 5px; border-radius:4px; }
+  main { max-width:1080px; margin:0 auto; padding:0 22px 80px;
+         display:grid; gap:18px; grid-template-columns:repeat(2,1fr); }
+  @media (max-width:760px){ main { grid-template-columns:1fr; } }
+  .voice {
+    background:var(--panel); border:1px solid var(--edge); border-radius:14px;
+    padding:16px 16px 14px; display:flex; flex-direction:column; gap:10px;
+  }
+  .voice h2 { margin:0; font-size:17px; display:flex; align-items:center; gap:9px; }
+  .num { font-size:12px; color:#0d1117; background:var(--accent); border-radius:6px;
+         padding:1px 7px; font-weight:700; }
+  .blurb { color:var(--dim); font-size:13px; margin:-2px 0 4px; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .row label { min-width:74px; color:var(--dim); font-size:13px; }
+  input[type=range]{ flex:1; min-width:120px; accent-color:var(--accent); }
+  select, input[type=number] {
+    background:var(--panel2); color:var(--ink); border:1px solid var(--edge);
+    border-radius:7px; padding:5px 8px; font-size:13px;
+  }
+  .readout { font-variant-numeric:tabular-nums; color:var(--accent2);
+             min-width:96px; text-align:right; font-size:13px; }
+  .btns { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+  button {
+    background:var(--accent); color:#0d1117; border:0; border-radius:8px;
+    padding:8px 14px; font-weight:650; font-size:14px; cursor:pointer;
+  }
+  button:hover { filter:brightness(1.08); }
+  button.alt { background:var(--panel2); color:var(--ink); border:1px solid var(--edge); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .chk { display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13px; }
+  .chk input { accent-color:var(--accent); }
+  #status {
+    position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+    background:#0b1018; border:1px solid var(--edge); border-radius:999px;
+    padding:8px 18px; color:var(--ink); font-size:13px; box-shadow:0 6px 24px #0008;
+    opacity:0; transition:opacity .15s; pointer-events:none; max-width:90vw;
+  }
+  #status.show { opacity:1; }
+  #status.busy { color:var(--warn); }
+  #status.err  { color:var(--bad); border-color:var(--bad); }
+  .boot { grid-column:1/-1; color:var(--dim); font-size:13px;
+          border:1px dashed var(--edge); border-radius:12px; padding:14px 16px; }
+  .boot b { color:var(--accent2); }
+  footer { max-width:1080px; margin:0 auto; padding:0 22px 60px; color:var(--dim);
+           font-size:12.5px; line-height:1.7; }
+  footer code { color:var(--accent2); }
+  a { color:var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="chip">EuroSynth</span> — the chip's voices, running in your browser</h1>
+  <p class="sub">
+    Every sound below is produced by the chip's <b>bit-exact integer reference models</b>
+    (the same Python that the silicon is verified against), executed live in
+    <b>PyScript / Pyodide</b>. There is no audio sample anywhere on this page — each clip
+    is computed sample-by-sample at the chip's true <code>12&nbsp;kHz</code> rate when you
+    press play, then handed to Web&nbsp;Audio. Pick a voice, set the controls, hit
+    <b>▶ Play</b> (or <b>⬇ WAV</b> to save the clip).
+  </p>
+</header>
+
+<main>
+  <div class="boot" id="boot">⏳ <b>Loading Python (Pyodide)…</b> first load pulls the
+    runtime from a CDN (a few seconds). The voices below activate when it's ready.</div>
+
+  <!-- 4 · Karplus–Strong -->
+  <section class="voice">
+    <h2><span class="num">4</span> Karplus–Strong — plucked string</h2>
+    <p class="blurb">A noise burst fills a short digital "string" that rings and mellows.
+       Low <code>N</code> = high note; tiny <code>N</code> = drums.</p>
+    <div class="row">
+      <label>Length N</label>
+      <input type="range" id="ks-n" min="2" max="255" value="46" />
+      <span class="readout" id="ks-n-val"></span>
+    </div>
+    <div class="row">
+      <label>Ring (ms)</label>
+      <input type="range" id="ks-len" min="60" max="2000" value="900" step="20" />
+      <span class="readout" id="ks-len-val"></span>
+    </div>
+    <div class="btns">
+      <button id="ks-play">▶ Pluck</button>
+      <button class="alt" id="ks-arp">▶ Arpeggio</button>
+      <button class="alt" id="ks-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- 6 · Bytebeat -->
+  <section class="voice">
+    <h2><span class="num">6</span> Bytebeat — self-playing loops</h2>
+    <p class="blurb">A counter <code>t</code> run through a one-line formula; the low 8 bits
+       are the waveform. It plays itself.</p>
+    <div class="row">
+      <label>Formula</label>
+      <select id="bb-formula">
+        <option value="0">0 · t*(t&gt;&gt;5 | t&gt;&gt;8) — the famous riff</option>
+        <option value="1">1 · formula 0, octave staircase</option>
+        <option value="2">2 · glitchy broken arpeggio</option>
+        <option value="3">3 · t&amp;(t&gt;&gt;8) — Sierpinski buzz</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Speed t_inc</label>
+      <input type="range" id="bb-tinc" min="1" max="64" value="6" />
+      <span class="readout" id="bb-tinc-val"></span>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="bb-dur" min="1" max="8" value="4" step="0.5" />
+      <span class="readout" id="bb-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="bb-play">▶ Play</button>
+      <button class="alt" id="bb-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- 5 · Chaos -->
+  <section class="voice">
+    <h2><span class="num">5</span> Chaos — noise, growls, alien drones</h2>
+    <p class="blurb">Three chaotic maths. Logistic goes tone→warble→noise as
+       <code>r_seed</code> rises; Lorenz is a smooth swooping rumble.</p>
+    <div class="row">
+      <label>Map</label>
+      <select id="ch-map">
+        <option value="0">0 · logistic (tone → noise)</option>
+        <option value="1">1 · CA-perturbed (evolving)</option>
+        <option value="2">2 · Lorenz (smooth drone)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>r_seed</label>
+      <input type="range" id="ch-rseed" min="0" max="255" value="200" />
+      <span class="readout" id="ch-rseed-val"></span>
+    </div>
+    <div class="row">
+      <label>CA rate</label>
+      <input type="range" id="ch-rate" min="0" max="63" value="3" />
+      <span class="readout" id="ch-rate-val"></span>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="ch-sweep" /> sweep r_seed up (rise into noise)</label>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="ch-dur" min="1" max="8" value="3" step="0.5" />
+      <span class="readout" id="ch-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="ch-play">▶ Play</button>
+      <button class="alt" id="ch-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- 3 · SID -->
+  <section class="voice">
+    <h2><span class="num">3</span> SID — 3-voice chiptune</h2>
+    <p class="blurb">Three oscillators (voice 2 plays an octave below for a thick patch),
+       plus ring-mod &amp; hard-sync for metallic / tearing tones.</p>
+    <div class="row">
+      <label>Note</label>
+      <select id="sid-note">
+        <option value="65.4">C2 · 65 Hz</option>
+        <option value="98">G2 · 98 Hz</option>
+        <option value="130.8">C3 · 131 Hz</option>
+        <option value="164.8">E3 · 165 Hz</option>
+        <option value="220" selected>A3 · 220 Hz</option>
+        <option value="261.6">C4 · 262 Hz</option>
+        <option value="329.6">E4 · 330 Hz</option>
+        <option value="392">G4 · 392 Hz</option>
+        <option value="440">A4 · 440 Hz</option>
+        <option value="523.3">C5 · 523 Hz</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Voice 1</label>
+      <select id="sid-w0"><option value="0" selected>saw</option><option value="1">triangle</option><option value="2">pulse</option><option value="3">noise</option></select>
+      <label style="min-width:auto">Voice 2 (8va↓)</label>
+      <select id="sid-w1"><option value="0" selected>saw</option><option value="1">triangle</option><option value="2">pulse</option><option value="3">noise</option></select>
+    </div>
+    <div class="row">
+      <label>Voice 3</label>
+      <select id="sid-w2"><option value="0">saw</option><option value="1">triangle</option><option value="2" selected>pulse</option><option value="3">noise</option></select>
+      <label style="min-width:auto">PW</label>
+      <input type="range" id="sid-pw" min="0" max="255" value="128" style="max-width:120px" />
+      <span class="readout" id="sid-pw-val"></span>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="sid-ring" /> ring-mod v2</label>
+      <label class="chk"><input type="checkbox" id="sid-sync" /> hard-sync v2</label>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="sid-dur" min="0.5" max="5" value="2" step="0.5" />
+      <span class="readout" id="sid-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="sid-play">▶ Play</button>
+      <button class="alt" id="sid-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- 7 · Neural -->
+  <section class="voice" style="grid-column:1/-1">
+    <h2><span class="num">7</span> Neural — the morphing bass (the headliner)</h2>
+    <p class="blurb">A tiny 5→8→8→1 network <i>is</i> the oscillator — a full forward pass
+       per sample, in fixed-point. One knob, <code>morph</code>, melts the tone through
+       sine → saw → square → pulse. It's a <b>bass</b> (caps near 187 Hz).
+       <i>(Renders take a moment — it's running a neural net per sample in Python.)</i></p>
+    <div class="row">
+      <label>Pitch bus</label>
+      <input type="range" id="nn-pitch" min="40" max="1023" value="601" />
+      <span class="readout" id="nn-pitch-val"></span>
+    </div>
+    <div class="row">
+      <label>Morph mode</label>
+      <select id="nn-mode">
+        <option value="sweep" selected>sweep 0 → 255 → 0 (breathing)</option>
+        <option value="static">hold static morph</option>
+      </select>
+      <label style="min-width:auto">value</label>
+      <input type="range" id="nn-morph" min="0" max="255" value="96" style="max-width:160px" />
+      <span class="readout" id="nn-morph-val"></span>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="nn-dur" min="1" max="5" value="3" step="0.5" />
+      <span class="readout" id="nn-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="nn-play">▶ Play</button>
+      <button class="alt" id="nn-dl">⬇ WAV</button>
+    </div>
+  </section>
+</main>
+
+<div id="status"></div>
+
+<footer>
+  <p><b>How this works.</b> The chip plays one voice at a time at a 12&nbsp;kHz sample rate.
+  Each engine here is the project's golden integer reference model
+  (<code>models/*_ref.py</code>) ported verbatim — all pure <code>int</code> math, no floats —
+  so the audio is identical, sample-for-sample, to what the silicon produces. PyScript runs
+  that Python in WebAssembly; Web&nbsp;Audio resamples the 12&nbsp;kHz clip up to your sound
+  card. The lo-fi "crunch" is real, not a filter.</p>
+  <p>Need to host it: any static server works — e.g. <code>python -m http.server</code> from
+  the repo root, then open <code>/web/</code>. It also runs on GitHub Pages unchanged.</p>
+</footer>
+
+<!-- ===================== plain-JS audio plumbing ===================== -->
+<script>
+  let audioCtx = null;
+  function ensureCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  // wavBytes: a Uint8Array holding a complete .wav file (12 kHz mono PCM16)
+  window.playWav = async function (wavBytes) {
+    const ctx = ensureCtx();
+    // decodeAudioData detaches its ArrayBuffer, so hand it a private copy.
+    const ab = wavBytes.buffer.slice(
+      wavBytes.byteOffset, wavBytes.byteOffset + wavBytes.byteLength);
+    const audioBuf = await ctx.decodeAudioData(ab);
+    const src = ctx.createBufferSource();
+    src.buffer = audioBuf;
+    src.connect(ctx.destination);
+    src.start();
+    return audioBuf.duration;
+  };
+  window.downloadWav = function (wavBytes, name) {
+    const blob = new Blob([wavBytes], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name || "eurosynth.wav";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
+</script>
+
+<!-- ===================== the chip's voices, in Python ===================== -->
+<script type="py">
+# ---------------------------------------------------------------------------
+# EuroSynth voices — ported VERBATIM from the bit-exact golden reference models
+# (models/ks_ref.py, bytebeat_ref.py, chaos_ref.py, sid_ref.py, neural_ref.py).
+# All arithmetic is plain Python int, identical to the silicon. Source of truth
+# remains those files; this is a faithful copy so the page is self-contained.
+# ---------------------------------------------------------------------------
+import io, wave, struct, asyncio
+import js
+from pyscript import when, window, document
+
+SR = 12000  # the chip's true sample rate at the recommended 12.288 MHz clock
+
+
+# ---- shared primitives ----------------------------------------------------
+def to_signed16(x):
+    x &= 0xFFFF
+    return x - 0x10000 if x & 0x8000 else x
+
+def clamp16(x):
+    if x > 32767: return 32767
+    if x < -32768: return -32768
+    return int(x)
+
+LFSR_POLY = 0xB400
+LFSR_SEED = 0xACE1
+def lfsr_step(lfsr):
+    lsb = lfsr & 1
+    lfsr >>= 1
+    if lsb:
+        lfsr ^= LFSR_POLY
+    return lfsr & 0xFFFF
+
+
+# ---- 4 · Karplus–Strong ----------------------------------------------------
+class KS:
+    NMAX = 256; DECAY_NUM = 2047; DECAY_SHIFT = 12
+    def __init__(self): self.reset()
+    def reset(self):
+        self.line = [0]*self.NMAX; self.ptr = 0; self.lfsr = LFSR_SEED; self.N = 2
+    def pluck(self, period):
+        self.N = 2 if period < 2 else (255 if period > 255 else period)
+        self.lfsr = LFSR_SEED
+        for i in range(self.N):
+            self.lfsr = lfsr_step(self.lfsr)
+            self.line[i] = to_signed16(self.lfsr)
+        self.ptr = 0
+    def tick(self):
+        N, ptr = self.N, self.ptr
+        out = self.line[ptr]
+        prev = self.line[(ptr + N - 1) % N]
+        new = ((out + prev) * self.DECAY_NUM) >> self.DECAY_SHIFT
+        self.line[ptr] = to_signed16(new)
+        self.ptr = (ptr + 1) % N
+        return out
+
+
+# ---- 6 · Bytebeat ----------------------------------------------------------
+M32 = 0xFFFFFFFF
+def _bb0(t): return ((t * (((t>>5)|(t>>8)) & M32)) & M32) & 0xFF
+def _bb1(t):
+    v = (t * (((t>>5)|(t>>8)) & M32)) & M32
+    return ((v >> ((t>>16)&7)) & M32) & 0xFF
+def _bb2(t):
+    inner = (((t>>12)|(t>>8)) & (63 & (t>>4))) & M32
+    return ((t * inner) & M32) & 0xFF
+def _bb3(t): return ((t & (t>>8)) & M32) & 0xFF
+_BB = [_bb0, _bb1, _bb2, _bb3]
+class Bytebeat:
+    def __init__(self): self.t = 0
+    def reset(self): self.t = 0
+    def tick(self, sel, t_inc):
+        f = _BB[sel] if 0 <= sel < 4 else _BB[0]
+        byte8 = f(self.t) & 0xFF
+        s = to_signed16((byte8 << 8) - 32768)
+        self.t = (self.t + (t_inc if t_inc else 1)) & M32
+        return s
+
+
+# ---- 5 · Chaos -------------------------------------------------------------
+ONE_Q16 = 1 << 16; X_MAX = 0xFFFF; CA_W = 8; CA_RULE = 30
+LZ_Q=12; LZ_SIGMA=10; LZ_RHO=28; LZ_BETA_Q8=683; LZ_DT_SH=6; LZ_OUT_SH=1
+LZ_X0=2<<LZ_Q; LZ_Y0=3<<LZ_Q; LZ_Z0=15<<LZ_Q
+def ca_step(state, rule, width):
+    mask = (1 << width) - 1; new = 0
+    for i in range(width):
+        left  = (state >> ((i+1) % width)) & 1
+        cen   = (state >> i) & 1
+        right = (state >> ((i-1) % width)) & 1
+        idx = (left << 2) | (cen << 1) | right
+        new |= ((rule >> idx) & 1) << i
+    return new & mask
+class Chaos:
+    def __init__(self): self.map_sel=0; self.rate=0; self.r_seed=0; self.reset()
+    @staticmethod
+    def r_q16(rs): return (3 << 16) + ((rs & 0xFF) << 8)
+    @staticmethod
+    def x_seed(rs): return (((rs & 0xFF) << 8) | 0x80) & 0xFFFF
+    def reset(self):
+        self.x = self.x_seed(self.r_seed); self.ca = 0x01; self.ca_cnt = 0
+        self.lx, self.ly, self.lz = LZ_X0, LZ_Y0, LZ_Z0
+    def config(self, m, rate, rs):
+        self.map_sel = m & 3; self.rate = rate & 0x3F; self.r_seed = rs & 0xFF
+    def _logistic_next(self, r_q16):
+        x = self.x
+        xmul = (x * (ONE_Q16 - x)) >> 16
+        xn = (r_q16 * xmul) >> 16
+        if xn > X_MAX: xn = X_MAX
+        if xn < 0: xn = 0
+        self.x = xn; return xn
+    def tick(self):
+        if self.map_sel == 0:
+            return to_signed16(self._logistic_next(self.r_q16(self.r_seed)) - 32768)
+        if self.map_sel == 1:
+            if self.rate == 0 or self.ca_cnt >= self.rate:
+                self.ca = ca_step(self.ca, CA_RULE, CA_W); self.ca_cnt = 0
+            else:
+                self.ca_cnt += 1
+            r = self.r_q16(self.r_seed) ^ (self.ca & 0xFF)
+            return to_signed16(self._logistic_next(r) - 32768)
+        x, y, z = self.lx, self.ly, self.lz
+        dx = LZ_SIGMA * (y - x)
+        dy = ((x * ((LZ_RHO << LZ_Q) - z)) >> LZ_Q) - y
+        dz = ((x * y) >> LZ_Q) - ((LZ_BETA_Q8 * z) >> 8)
+        self.lx = x + (dx >> LZ_DT_SH)
+        self.ly = y + (dy >> LZ_DT_SH)
+        self.lz = z + (dz >> LZ_DT_SH)
+        return to_signed16(self.lx >> LZ_OUT_SH)
+
+
+# ---- 3 · SID ---------------------------------------------------------------
+PHASE_MASK = 0xFFFF; PHASE_MSB = 0x8000
+WAVE_SAW, WAVE_TRI, WAVE_PULSE, WAVE_NOISE = 0, 1, 2, 3
+class Voice:
+    def __init__(self): self.reset()
+    def reset(self): self.phase = 0; self.overflow = 0; self.lfsr = LFSR_SEED
+    def advance(self, freq):
+        nxt = self.phase + (freq & PHASE_MASK)
+        self.overflow = (nxt >> 16) & 1
+        self.phase = nxt & PHASE_MASK
+        if self.overflow: self.lfsr = lfsr_step(self.lfsr)
+    def sync_reset(self): self.phase = 0
+    @property
+    def phase_msb(self): return (self.phase >> 15) & 1
+    def waveform(self, wave, pw, ring, neighbor_msb):
+        if wave == WAVE_SAW:
+            return to_signed16(self.phase - PHASE_MSB)
+        if wave == WAVE_TRI:
+            sign = self.phase_msb
+            if ring: sign ^= (neighbor_msb & 1)
+            low15 = self.phase & 0x7FFF
+            tri = (low15 ^ (0x7FFF if sign else 0)) << 1
+            return to_signed16(tri - PHASE_MSB)
+        if wave == WAVE_PULSE:
+            return 0x7FFF if (self.phase >> 8) >= (pw & 0xFF) else -0x8000
+        return to_signed16(self.lfsr)
+class SID:
+    NEIGHBOR = [2, 0, 1]
+    def __init__(self): self.reset()
+    def reset(self): self.v = [Voice(), Voice(), Voice()]
+    def tick(self, freq, wave, pw, ring_en, sync_en):
+        pre_msb = [self.v[i].phase_msb for i in range(3)]
+        for i in range(3): self.v[i].advance(freq[i])
+        ov = [self.v[i].overflow for i in range(3)]
+        for i in range(3):
+            if (sync_en >> i) & 1 and ov[self.NEIGHBOR[i]]:
+                self.v[i].sync_reset()
+        outs = []
+        for i in range(3):
+            ring = (ring_en >> i) & 1
+            outs.append(self.v[i].waveform(wave[i], pw[i], ring, pre_msb[self.NEIGHBOR[i]]))
+        return to_signed16((outs[0] + outs[1] + outs[2]) >> 2)
+
+
+# ---- 7 · Neural ------------------------------------------------------------
+NEURAL_HEX = """
+0000 0192 0324 04b5 0646 07d6 0964 0af1 0c7c 0e06 0f8d 1112 1294 1413 1590 1709
+187e 19ef 1b5d 1cc6 1e2b 1f8c 20e7 223d 238e 24da 2620 2760 289a 29ce 2afb 2c21
+2d41 2e5a 2f6c 3076 3179 3274 3368 3453 3537 3612 36e5 37b0 3871 392b 39db 3a82
+3b21 3bb6 3c42 3cc5 3d3f 3daf 3e15 3e72 3ec5 3f0f 3f4f 3f85 3fb1 3fd4 3fec 3ffb
+4000 3ffb 3fec 3fd4 3fb1 3f85 3f4f 3f0f 3ec5 3e72 3e15 3daf 3d3f 3cc5 3c42 3bb6
+3b21 3a82 39db 392b 3871 37b0 36e5 3612 3537 3453 3368 3274 3179 3076 2f6c 2e5a
+2d41 2c21 2afb 29ce 289a 2760 2620 24da 238e 223d 20e7 1f8c 1e2b 1cc6 1b5d 19ef
+187e 1709 1590 1413 1294 1112 0f8d 0e06 0c7c 0af1 0964 07d6 0646 04b5 0324 0192
+0000 fe6e fcdc fb4b f9ba f82a f69c f50f f384 f1fa f073 eeee ed6c ebed ea70 e8f7
+e782 e611 e4a3 e33a e1d5 e074 df19 ddc3 dc72 db26 d9e0 d8a0 d766 d632 d505 d3df
+d2bf d1a6 d094 cf8a ce87 cd8c cc98 cbad cac9 c9ee c91b c850 c78f c6d5 c625 c57e
+c4df c44a c3be c33b c2c1 c251 c1eb c18e c13b c0f1 c0b1 c07b c04f c02c c014 c005
+c000 c005 c014 c02c c04f c07b c0b1 c0f1 c13b c18e c1eb c251 c2c1 c33b c3be c44a
+c4df c57e c625 c6d5 c78f c850 c91b c9ee cac9 cbad cc98 cd8c ce87 cf8a d094 d1a6
+d2bf d3df d505 d632 d766 d8a0 d9e0 db26 dc72 ddc3 df19 e074 e1d5 e33a e4a3 e611
+e782 e8f7 ea70 ebed ed6c eeee f073 f1fa f384 f50f f69c f82a f9ba fb4b fcdc fe6e
+d689 f2fe 3c76 160d eb85 fbb9 c60a 4280 ddd2 0d9e e974 1edb 094c eb06 0dc9 f48b
+32d5 12f9 2f38 4638 2a9b 01da ecf0 20c4 f7a5 2be8 104f 2c7a 1078 069c e8ff fea3
+1c82 175b f6e4 fbcc 0f3f fbe6 1121 01d7 3b35 dd18 2990 d10c 0400 faef c2bb 00b7
+2b86 dff2 2b2f d892 c0ea f8d6 f188 299f f648 5244 f0cb fc71 0682 395b 0d3d 1205
+e851 02d2 0676 1b76 e057 339c 07ba 0521 fbf6 ee09 1339 252a 0789 cc22 3d57 21ce
+a915 1376 1ee6 08ba e501 c5fc 2197 387b 2b31 12fd c33a 2ce8 f822 0fd8 12fc 208c
+bfcf 095e c35f f4f3 c046 1d13 ff02 1d4f f73e ea92 389c 0694 2028 ead8 d29c 0ca4
+b4e1 eaed 33f0 0a6d 05ea 2201 f264 ee15 d45b f610 0210 da4c 564c b52a 2be0 d65e
+092b
+"""
+QBITS=14; QSCALE=1<<QBITS; LUT_DEPTH=256; LUT_SHIFT=8
+N_IN=5; H1=8; H2=8; N_OUT=1; OUT_SHIFT=1; WEIGHT_BASE=256
+def _load_neural():
+    mem = [int(t, 16) & 0xFFFF for t in NEURAL_HEX.split()]
+    lut = [to_signed16(mem[i]) for i in range(LUT_DEPTH)]
+    w   = [to_signed16(mem[WEIGHT_BASE + i]) for i in range(129)]
+    return lut, w
+class Neural:
+    def __init__(self, lut, w): self.lut = lut; self.w = w; self.phase = 0
+    def reset(self): self.phase = 0
+    def _sine(self, hp): return self.lut[(hp >> LUT_SHIFT) & 255]
+    def _layer(self, inp, base, n_in, n_out, relu):
+        out = []; idx = base
+        for _j in range(n_out):
+            acc = 0
+            for i in range(n_in):
+                acc += inp[i] * self.w[idx]; idx += 1
+            acc += self.w[idx] << QBITS; idx += 1
+            val = acc >> QBITS
+            if relu and val < 0: val = 0
+            out.append(val)
+        return out, idx
+    def forward(self, morph):
+        ph = self.phase & 0xFFFF
+        f = [self._sine(ph), self._sine((2*ph)&0xFFFF), self._sine((3*ph)&0xFFFF),
+             self._sine((4*ph)&0xFFFF), (morph << 7) - QSCALE]
+        a1, b = self._layer(f, 0, N_IN, H1, True)
+        a2, b = self._layer(a1, b, H1, H2, True)
+        o,  b = self._layer(a2, b, H2, N_OUT, False)
+        return clamp16(o[0] << OUT_SHIFT)
+    def tick(self, pitch, morph):
+        self.phase = (self.phase + pitch) & 0xFFFF
+        return self.forward(morph)
+_NN_LUT, _NN_W = _load_neural()
+
+
+# ---- mastering helpers (same gentle gain + fade as render_audio_12k.py) -----
+def auto_gain(s, target=29000):
+    peak = max((abs(x) for x in s), default=0)
+    if peak == 0: return s
+    if peak < 13000 or peak > 32000:
+        g = target / float(peak)
+        return [clamp16(round(x*g)) for x in s]
+    return s
+def fade(s, n=120):
+    out = list(s); n = min(n, len(out)//2)
+    for i in range(n):
+        g = i / float(n)
+        out[i] = clamp16(round(out[i]*g))
+        out[-1-i] = clamp16(round(out[-1-i]*g))
+    return out
+def build_wav(samples):
+    buf = io.BytesIO()
+    w = wave.open(buf, "wb")
+    w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+    w.writeframes(b"".join(struct.pack("<h", clamp16(s)) for s in samples))
+    w.close()
+    return buf.getvalue()
+
+
+# ---- DOM glue -------------------------------------------------------------
+def q(sel): return document.querySelector(sel)
+def ival(sel): return int(float(q(sel).value))
+def fval(sel): return float(q(sel).value)
+def sval(sel): return q(sel).value
+def chk(sel): return q(sel).checked
+
+def status(msg, kind=""):
+    el = q("#status")
+    el.textContent = msg
+    el.className = ("show " + kind).strip()
+def clear_status():
+    q("#status").className = ""
+
+_last_wav = {"bytes": None, "name": "eurosynth.wav"}
+
+def _to_jsbytes(b):
+    arr = js.Uint8Array.new(len(b))
+    arr.assign(b)
+    return arr
+
+async def emit(samples, name, play=True):
+    """Master, package as a WAV, then play and/or stash for download."""
+    samples = fade(auto_gain(samples))
+    wav = build_wav(samples)
+    _last_wav["bytes"] = wav
+    _last_wav["name"] = name
+    if play:
+        await window.playWav(_to_jsbytes(wav))
+    secs = len(samples) / float(SR)
+    return secs
+
+async def run(render, name, busy="Rendering…"):
+    """Common click flow: show status, yield a frame to paint, render, play."""
+    status(busy, "busy")
+    await asyncio.sleep(0.03)          # let the browser paint the busy state
+    try:
+        samples = render()
+        secs = await emit(samples, name)
+        status("▶ %s  ·  %.1f s @ 12 kHz" % (name, secs))
+    except Exception as e:              # noqa: BLE001 — surface anything to the user
+        status("error: %s" % e, "err")
+
+def download():
+    if _last_wav["bytes"] is None:
+        status("nothing rendered yet — press ▶ first", "err"); return
+    window.downloadWav(_to_jsbytes(_last_wav["bytes"]), _last_wav["name"])
+
+
+# ====================== per-voice renderers + wiring ======================
+
+# --- live readouts ---
+def _hz_from_n(n): return SR / float(n)
+def upd_ks(*_):
+    n = ival("#ks-n")
+    q("#ks-n-val").textContent = "N=%d · %.0f Hz" % (n, _hz_from_n(n))
+    q("#ks-len-val").textContent = "%d ms" % ival("#ks-len")
+def upd_bb(*_):
+    q("#bb-tinc-val").textContent = "×%d" % ival("#bb-tinc")
+    q("#bb-dur-val").textContent = "%.1f s" % fval("#bb-dur")
+def upd_ch(*_):
+    q("#ch-rseed-val").textContent = "%d (r≈%.2f)" % (ival("#ch-rseed"), 3.0 + ival("#ch-rseed")/256.0)
+    q("#ch-rate-val").textContent = str(ival("#ch-rate"))
+    q("#ch-dur-val").textContent = "%.1f s" % fval("#ch-dur")
+def upd_sid(*_):
+    q("#sid-pw-val").textContent = "0x%02X" % ival("#sid-pw")
+    q("#sid-dur-val").textContent = "%.1f s" % fval("#sid-dur")
+def upd_nn(*_):
+    p = ival("#nn-pitch")
+    q("#nn-pitch-val").textContent = "%d · %.0f Hz" % (p, p * 0.183)
+    q("#nn-morph-val").textContent = "0x%02X" % ival("#nn-morph")
+    q("#nn-dur-val").textContent = "%.1f s" % fval("#nn-dur")
+
+for ev in ("input", "change"):
+    when(ev, "#ks-n")(upd_ks); when(ev, "#ks-len")(upd_ks)
+    when(ev, "#bb-tinc")(upd_bb); when(ev, "#bb-dur")(upd_bb)
+    when(ev, "#ch-rseed")(upd_ch); when(ev, "#ch-rate")(upd_ch); when(ev, "#ch-dur")(upd_ch)
+    when(ev, "#sid-pw")(upd_sid); when(ev, "#sid-dur")(upd_sid)
+    when(ev, "#nn-pitch")(upd_nn); when(ev, "#nn-morph")(upd_nn); when(ev, "#nn-dur")(upd_nn)
+
+
+# --- Karplus–Strong ---
+def render_ks_pluck():
+    n = ival("#ks-n"); ms = ival("#ks-len")
+    ks = KS(); ks.reset(); ks.pluck(n)
+    total = int((ms/1000.0)*SR) + int(0.3*SR)
+    return [ks.tick() for _ in range(total)]
+def render_ks_arp():
+    ks = KS(); ks.reset(); out = []
+    note_len = int(0.28*SR)
+    for n in (46, 36, 31, 23, 31, 36):          # C-major run (C4 E4 G4 C5 …)
+        ks.pluck(n)
+        for _ in range(note_len): out.append(ks.tick())
+    for _ in range(int(0.5*SR)): out.append(ks.tick())
+    return out
+
+# --- Bytebeat ---
+def render_bb():
+    sel = ival("#bb-formula"); t_inc = ival("#bb-tinc")
+    n = int(fval("#bb-dur")*SR)
+    bb = Bytebeat(); bb.reset()
+    return [bb.tick(sel, t_inc) for _ in range(n)]
+
+# --- Chaos ---
+def render_ch():
+    m = ival("#ch-map"); rs = ival("#ch-rseed"); rate = ival("#ch-rate")
+    n = int(fval("#ch-dur")*SR); sweep = chk("#ch-sweep")
+    ch = Chaos(); ch.config(m, rate, rs); ch.reset()
+    out = []
+    if sweep and m != 2:
+        for i in range(n):
+            cur = rs + (255 - rs) * i // max(1, n-1)     # ramp r_seed up to 255
+            ch.config(m, rate, cur)                       # change r WITHOUT reset
+            out.append(ch.tick())
+    else:
+        for _ in range(n): out.append(ch.tick())
+    return out
+
+# --- SID ---
+def _fword(hz): return int(round(65536.0 * hz / SR)) & 0xFFFF
+def render_sid():
+    base = fval("#sid-note")
+    waves = [ival("#sid-w0"), ival("#sid-w1"), ival("#sid-w2")]
+    pwv = ival("#sid-pw")
+    ring = 0b100 if chk("#sid-ring") else 0   # ring/sync target voice 3 (index 2)
+    sync = 0b100 if chk("#sid-sync") else 0
+    freq = [_fword(base), _fword(base/2.0), _fword(base)]   # v2 an octave down
+    pw = [pwv, pwv, pwv]
+    n = int(fval("#sid-dur")*SR)
+    sid = SID(); sid.reset()
+    return [sid.tick(freq, waves, pw, ring, sync) for _ in range(n)]
+
+# --- Neural ---
+def render_nn():
+    pitch = ival("#nn-pitch"); mode = sval("#nn-mode")
+    static_m = ival("#nn-morph"); n = int(fval("#nn-dur")*SR)
+    nn = Neural(_NN_LUT, _NN_W); nn.reset()
+    out = []
+    if mode == "sweep":
+        half = max(1, n // 2)
+        for i in range(n):
+            morph = (i * 256)//half if i < half else ((n - i) * 256)//half
+            if morph > 255: morph = 255
+            if morph < 0: morph = 0
+            out.append(nn.tick(pitch, morph))
+    else:
+        for _ in range(n): out.append(nn.tick(pitch, static_m))
+    return out
+
+
+# --- button wiring ---
+@when("click", "#ks-play")
+async def _(e): await run(render_ks_pluck, "ks_pluck.wav")
+@when("click", "#ks-arp")
+async def _(e): await run(render_ks_arp, "ks_arpeggio.wav")
+@when("click", "#ks-dl")
+def _(e): download()
+
+@when("click", "#bb-play")
+async def _(e): await run(render_bb, "bytebeat.wav")
+@when("click", "#bb-dl")
+def _(e): download()
+
+@when("click", "#ch-play")
+async def _(e): await run(render_ch, "chaos.wav")
+@when("click", "#ch-dl")
+def _(e): download()
+
+@when("click", "#sid-play")
+async def _(e): await run(render_sid, "sid.wav")
+@when("click", "#sid-dl")
+def _(e): download()
+
+@when("click", "#nn-play")
+async def _(e): await run(render_nn, "neural.wav", busy="Rendering the neural net (per-sample)…")
+@when("click", "#nn-dl")
+def _(e): download()
+
+
+# --- boot: prime readouts, reveal the UI ---
+upd_ks(); upd_bb(); upd_ch(); upd_sid(); upd_nn()
+q("#boot").style.display = "none"
+status("Python ready — pick a voice and press ▶", "")
+</script>
+</body>
+</html>

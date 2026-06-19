@@ -93,13 +93,13 @@ GRT_ALLOW_CONGESTION: true
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200
 
-# Fix antenna violations after DRT. Known-good 10/10 (the clean roster-v1 run used
-# this and netgen LVS passed). It leaves 1 residual antenna net (net16049).
-# NOTE: enabling heuristic diode insertion (RUN_HEURISTIC_DIODE_INSERTION +
-# HEURISTIC_ANTENNA_THRESHOLD: 130) DOES clear the antenna to 0/0, but the re-routed
-# netlist then fails netgen top-level *port* matching on the 46 symmetric bidir pads
-# (internals all equivalent -> a netgen symmetry artifact, not a real short/open).
-# Net trade was worse than v1's lone waivable antenna, so it's left disabled here.
+# Fix antenna violations after DRT, 10/10 (the clean roster-v1 baseline, netgen-LVS-clean).
+# net16049 (a high-fanout dlyb_1 net = a FOUNDRY standard cell) was the lone residual.
+# As of PDK 019cf7a3 (template 1.5.3) the foundry-stdcell antenna-insertion fix from the
+# wafer.space PDK fork is ported in, which targets exactly this cell class -> expected to
+# clear net16049 at the PDK level. Keep the known-good 10/10 diode repair (do NOT force
+# JUMPER_ONLY: it would block the PDK's diode-based antenna strategy and is untested vs
+# netgen). This is the closest-to-v1 config -> best shot at antenna 0 AND clean LVS.
 DRT_ANTENNA_REPAIR_ITERS: 10
 DRT_ANTENNA_REPAIR_MARGIN: 10 # %
 

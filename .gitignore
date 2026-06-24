@@ -11,7 +11,10 @@ sim_build/
 librelane/runs/
 final/
 final_roster/
-final_roster_v7/
+final_roster_v7/*
+!final_roster_v7/gds/
+final_roster_v7/gds/*
+!final_roster_v7/gds/chip_top.gds.gz
 
 # --- listenable audio previews (large/binary throwaways, like final/) ---
 previews/

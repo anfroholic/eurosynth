@@ -1,0 +1,58 @@
+# docker-compose.yml — the two containers the eurosynth Docker flow needs.
+#
+#   docker compose build sim           # build the simulation image (once)
+#   docker compose run --rm sim ...     # run a command in the sim image
+#   docker compose run --rm harden ...  # run LibreLane / ciel
+#
+# On Windows (no `make`) you normally drive these through the scripts:
+#   bash scripts/sim_all.sh    bash scripts/pdk.sh    bash scripts/harden.sh
+# On Linux/Mac/WSL the Makefile wraps the same commands.
+#
+# Knobs come from .env (copy .env.example -> .env). Defaults below match a
+# wafer.space gf180mcuD shuttle, slot 1x0p5 (the half slot eurosynth targets).
+
+services:
+  # ---- Simulation container (built from docker/Dockerfile.sim) ----------------
+  sim:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.sim
+    image: eurosynth-sim                 # local tag, built on demand
+    pull_policy: build                   # build this local tag; never try to pull it
+    working_dir: /work
+    volumes:
+      - .:/work                          # the repo, live-mounted
+      - ${PDK_ROOT:-./pdk}:/pdk          # the PDK as a plain host folder (needed by cocotb sims)
+    environment:
+      PDK_ROOT: /pdk
+      PDK:  ${PDK:-gf180mcuD}
+      SCL:  ${SCL:-gf180mcu_fd_sc_mcu7t5v0}
+      PAD:  ${PAD:-gf180mcu_fd_io}
+      SRAM: ${SRAM:-gf180mcu_fd_ip_sram}
+      SLOT: ${SLOT:-1x0p5}
+    # No default command: the scripts/Makefile pass the command (e.g. the TB suite).
+
+  # ---- Hardening container: official prebuilt LibreLane image + pmap shim -----
+  # This image ALREADY contains librelane + OpenROAD + Yosys + KLayout + Magic +
+  # Netgen, so inside it you call `librelane ...` directly (NO Nix devshell).
+  harden:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.harden
+      args:
+        # Override the LibreLane tag in .env if you need a specific one.
+        LIBRELANE_IMAGE: ${LIBRELANE_IMAGE:-ghcr.io/librelane/librelane:3.1.0.dev2}
+    image: eurosynth-harden
+    pull_policy: build                   # build this local tag; never try to pull it
+    working_dir: /work
+    volumes:
+      - .:/work                          # the repo, live-mounted
+      - ${PDK_ROOT:-./pdk}:/pdk          # the PDK as a plain host folder (~4 GB; set PDK_ROOT to relocate)
+    environment:
+      PDK_ROOT: /pdk
+      PDK:  ${PDK:-gf180mcuD}
+      SCL:  ${SCL:-gf180mcu_fd_sc_mcu7t5v0}
+      PAD:  ${PAD:-gf180mcu_fd_io}
+      SRAM: ${SRAM:-gf180mcu_fd_ip_sram}
+      SLOT: ${SLOT:-1x0p5}
+    # No default command: scripts/harden.sh / scripts/pdk.sh pass the command.

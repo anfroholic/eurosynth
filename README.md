@@ -37,19 +37,33 @@ plucked string** — is verified *bit-exact* against a golden reference and hard
 | [models/ks_ref.py](models/ks_ref.py) · [models/ks_golden.hex](models/ks_golden.hex) | Bit-exact reference model + golden vector |
 | [tb/](tb/) | Self-checking testbenches (KS golden, spine round-trip, elaboration) |
 
-## ✅ Verification
+## 🏗️ Build it yourself (Docker)
 
-Runs on a plain open-source simulator, no PDK required:
+The whole flow runs in Docker — you need only `docker` + `docker compose` (no
+`make`, no Nix). On Windows use the scripts directly; on Linux/Mac/WSL the
+`make` targets wrap them.
 
 ```bash
-bash scripts/sim.sh bash -lc 'iverilog -g2012 -o /tmp/ks.vvp    src/ks_engine.sv tb/tb_ks_engine.sv && vvp /tmp/ks.vvp'      # KS OK   256/256
-bash scripts/sim.sh bash -lc 'iverilog -g2012 -o /tmp/spine.vvp src/synth_spine.sv src/ks_engine.sv tb/tb_synth_spine.sv && vvp /tmp/spine.vvp'  # SPINE OK
+cp .env.example .env          # (once) design knobs; SLOT defaults to 1x0p5
+
+bash scripts/sim_all.sh       # the green check: full standalone TB suite, no PDK
+bash scripts/pdk.sh           # fetch the gf180mcuD PDK into ./pdk (~4 GB, one-time)
+bash scripts/harden.sh        # RTL -> GDSII; signed-off views land in ./final
 ```
+
+`scripts/sim_all.sh` is the fast, **no-PDK** check: it runs every engine's
+bit-exact golden testbench, the spine round-trip, and the `chip_core` 1x0p5
+elaboration on a plain open-source simulator (Icarus), ending in
+`ALL STANDALONE TBS PASSED`. See [REFACTOR_PLAN.md](REFACTOR_PLAN.md) for how the
+flow is wired.
 
 ## 🛠️ Built with
 
-GF180MCU PDK · LibreLane · OpenROAD · Yosys · Magic · KLayout · Netgen, on the
-[wafer.space gf180mcu-project-template](https://github.com/wafer-space/gf180mcu-project-template).
+GF180MCU PDK · LibreLane · OpenROAD · Yosys · Magic · KLayout · Netgen, in a
+fully Docker-based flow adapted from the
+[wafer.space Docker starter kit](https://github.com/evezor/wafer_space_docker_based_starter_kit)
+(itself built on the
+[wafer.space gf180mcu-project-template](https://github.com/wafer-space/gf180mcu-project-template)).
 
 ## 📜 License
 

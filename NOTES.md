@@ -214,15 +214,18 @@ standalone TBs are the trust anchor — they need **no PDK**.
   weight path absolute (synth cwd is the run dir, not the repo root). This branch is
   RTL + verification only.
 
-Run it (container-based standalone TBs — no PDK):
+Run it (container-based standalone TBs — no PDK). The whole suite (every engine's
+golden TB + spine round-trip + `chip_core` elaboration) is one command:
 ```bash
-bash scripts/sim.sh bash -lc 'iverilog -g2012 -o /tmp/spine.vvp src/synth_spine.sv src/ks_engine.sv tb/tb_synth_spine.sv && vvp /tmp/spine.vvp'
-bash scripts/sim.sh bash -lc 'iverilog -g2012 -o /tmp/ks.vvp src/ks_engine.sv tb/tb_ks_engine.sv && vvp /tmp/ks.vvp'
-bash scripts/sim.sh bash -lc 'iverilog -g2012 -o /tmp/core.vvp src/chip_core.sv src/synth_spine.sv src/ks_engine.sv tb/tb_chip_core_elab.sv && vvp /tmp/core.vvp'
+bash scripts/sim_all.sh    # -> ALL STANDALONE TBS PASSED
+```
+For a single ad-hoc TB, `scripts/sim.sh` drops you into the sim container, e.g.:
+```bash
+bash scripts/sim.sh bash -lc 'iverilog -g2012 -I src -o /tmp/ks.vvp src/ks_engine.sv tb/tb_ks_engine.sv && vvp /tmp/ks.vvp'
 ```
 
-`make sim` (cocotb on `chip_top`) and `make librelane` (RTL → GDSII) both need the
-**PDK** — see PLAN §9 / PROGRESS Phase 5.
+GDSII hardening (`bash scripts/pdk.sh` then `bash scripts/harden.sh`) needs the
+**PDK** — see [REFACTOR_PLAN.md](REFACTOR_PLAN.md) for the full Docker flow.
 
 ---
 

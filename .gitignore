@@ -19,7 +19,7 @@ final_roster_v7/gds/*
 # --- listenable audio previews (large/binary throwaways, like final/) ---
 previews/
 
-# --- PDK (cloned by `make clone-pdk`, multi-GB) ---
+# --- PDK (fetched by `scripts/pdk.sh` into ./pdk, multi-GB) ---
 .ciel/
 ciel/
 pdk/
@@ -37,7 +37,7 @@ Thumbs.db
 # --- Claude Code machine-local settings (perms allowlist lives here) ---
 .claude/settings.local.json
 
-# --- template-import additions (gf180mcu PDK lands in ./gf180mcu via Makefile PDK_ROOT) ---
+# --- legacy PDK dir from the old Nix flow (kept ignored for old checkouts) ---
 gf180mcu/
 src/generated_defines.svh
 generated_defines.svh

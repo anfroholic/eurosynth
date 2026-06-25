@@ -16,10 +16,18 @@ plucked string** — is verified *bit-exact* against a golden reference and hard
 > **DRC = 0 · LVS = 0 · antenna = 0 · power-grid = 0** — manufacturability report all-pass.
 > Die 3.93 mm × 2.53 mm (9.95 mm²), 66,906 standard cells, 5 V.
 
+### 🎧 Hear it in your browser
+
+**▶ [Live playground → anfroholic.github.io/eurosynth/web](https://anfroholic.github.io/eurosynth/web/)**
+— all five voices running live, no install. It executes the chip's **bit-exact integer
+reference models** (`models/*_ref.py`) in WebAssembly via [PyScript](https://pyscript.net),
+so what you hear is sample-for-sample what the silicon produces. Source: [web/](web/).
+
 ## 📖 Documentation
 
 | Doc | What's in it |
 |---|---|
+| **[🎧 Live playground](https://anfroholic.github.io/eurosynth/web/)** | The chip's voices running in your browser — bit-exact reference models compiled to WebAssembly (PyScript). Source in [web/](web/). |
 | **[docs/SHOWCASE.md](docs/SHOWCASE.md)** | The flagship write-up: what it is, the silicon achievement & signoff, architecture, the Karplus-Strong engine, specs, and pinout. **Start here.** |
 | **[docs/HARDWARE_GUIDE.md](docs/HARDWARE_GUIDE.md)** | Build it: power/clock/reset, a sample circuit for **every pad**, a "hello world" first-light test, two audio output options, and a ready-to-run Arduino controller. |
 | **[NOTES.md](NOTES.md)** | Design rationale — *why* it looks the way it does; the engine contract; the roadmap. |

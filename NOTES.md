@@ -9,7 +9,9 @@ are a fresh session picking this up, read this first, then the comments in the R
 
 > 📣 **Showing the chip off?** See [docs/SHOWCASE.md](docs/SHOWCASE.md) (architecture,
 > silicon signoff, specs, pinout) and [docs/HARDWARE_GUIDE.md](docs/HARDWARE_GUIDE.md)
-> (power/clock/reset + a sample circuit for every pad + an Arduino controller).
+> (power/clock/reset + a sample circuit for every pad + an Arduino controller). Or just
+> **[hear the voices in your browser](https://anfroholic.github.io/eurosynth/web/)**
+> (live PyScript playground; source in [web/](web/)).
 
 ---
 

@@ -1,5 +1,7 @@
 # `web/` — the chip's voices in a browser (PyScript)
 
+> **▶ Live: https://anfroholic.github.io/eurosynth/web/** (no install — runs in any modern browser)
+
 [`index.html`](index.html) is a **self-contained** playground that runs all five of
 the chip's sound engines live in the browser. It uses
 [PyScript / Pyodide](https://pyscript.net) to execute the project's **bit-exact

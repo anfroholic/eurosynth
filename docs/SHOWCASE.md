@@ -15,6 +15,10 @@
   and the I2S serializer. The frame is the I/O pad ring.</em>
 </p>
 
+> 🎧 **Hear it first:** the **[live in-browser playground](https://anfroholic.github.io/eurosynth/web/)**
+> runs all five voices from the chip's bit-exact reference models (WebAssembly / PyScript)
+> — sample-for-sample what the silicon produces, no install.
+
 ---
 
 ## TL;DR

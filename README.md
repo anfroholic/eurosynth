@@ -37,52 +37,43 @@ plucked string** — is verified *bit-exact* against a golden reference and hard
 | [models/ks_ref.py](models/ks_ref.py) · [models/ks_golden.hex](models/ks_golden.hex) | Bit-exact reference model + golden vector |
 | [tb/](tb/) | Self-checking testbenches (KS golden, spine round-trip, elaboration) |
 
-## 🏗️ Reproduce this chip (Docker)
+## ⚡ 5-Minute Quickstart
 
-> **Built on the [wafer.space Docker starter kit](https://github.com/evezor/wafer_space_docker_based_starter_kit)**
-> by [@evezor](https://github.com/evezor) — a beginner-friendly GF180MCU + wafer.space
-> tutorial. EuroSynth uses that kit's exact Docker flow (itself built on the
+> **Built on [@evezor's wafer.space Docker starter kit](https://github.com/evezor/wafer_space_docker_based_starter_kit)** —
+> a beginner-friendly GF180MCU + wafer.space tutorial (itself built on the
 > [wafer.space gf180mcu-project-template](https://github.com/wafer-space/gf180mcu-project-template)).
-> New to silicon? **Do that tutorial first**, then come back and rebuild this chip.
+> EuroSynth uses that kit's exact Docker flow. **New to silicon? Do that tutorial first.**
 
-Everything runs in Docker — you need only **`docker` + `docker compose`** (no Nix,
-no local toolchain). On native Windows (Git Bash) drive it with the `scripts/*.sh`
-wrappers; on Linux / macOS / WSL the matching `make` targets wrap the same scripts.
-
-### ⚡ Quickstart (5 minutes) — prove the design simulates
+The fastest path from nothing to a green simulation — proof the whole thing works
+on your machine. You need only `docker` + `docker compose` (and `make`).
 
 ```bash
+# 1. Get the code
 git clone https://github.com/anfroholic/eurosynth.git
 cd eurosynth
-cp .env.example .env                  # design knobs; SLOT defaults to 1x0p5
 
-bash scripts/sim_all.sh               # ( = make sim )  the green check — no PDK needed
+# 2. Build the simulation image (one-time; a few minutes)
+make build-sim
+
+# 3. Simulate the chip — the moment of truth
+make sim
 ```
 
-**Success looks like:** the run ends with `ALL STANDALONE TBS PASSED` (exit 0). That
-single command builds the sim image, then runs every engine's bit-exact golden
-testbench, the spine I2S round-trip, and the `chip_core` 1x0p5 elaboration on
-Icarus Verilog — no multi-GB PDK required.
+> ✅ **Green light:** `make sim` ends with `ALL STANDALONE TBS PASSED` and exits 0.
+> If you got here, the kit works on your machine.
 
-### 🏭 Reproduce the GDSII (the layout) — ~4 GB download + a long run
+### Optional — produce a real layout
 
 ```bash
-bash scripts/pdk.sh                   # ( = make pdk )    fetch the gf180mcuD PDK -> ./pdk  (~4 GB, one-time)
-bash scripts/harden.sh                # ( = make harden ) RTL -> GDSII via LibreLane -> ./final
+make pdk        # fetch the GF180MCU PDK (multi-GB, one-time)
+make harden     # RTL → GDSII for the default slot (takes a while)
 ```
 
-`harden` runs the full flow (Yosys synthesis → OpenROAD place-and-route →
-Magic/KLayout/Netgen signoff) in the container and saves views to `./final`. Check
-the result:
+After `make harden`, the signed-off layout lands in `final/` — check
+`final/manufacturability.rpt` (DRC / LVS / antenna) and `final/gds/chip_top.gds`.
 
-```bash
-cat final/manufacturability.rpt       # want  DRC = 0 · LVS = 0 · antenna = 0
-ls  final/gds/chip_top.gds            # the layout you'd send to the shuttle
-```
-
-> On Linux / macOS / WSL the same three steps are `make sim`, `make pdk`,
-> `make harden` (each just calls the script above); `make help` lists every target.
-> See [REFACTOR_PLAN.md](REFACTOR_PLAN.md) for how the Docker flow is wired.
+> **No `make`?** On native Windows the same steps are the script wrappers:
+> `bash scripts/sim_all.sh`, `bash scripts/pdk.sh`, `bash scripts/harden.sh`.
 
 ## 🛠️ Built with
 

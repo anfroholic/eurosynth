@@ -17,8 +17,11 @@
 //
 //   Engine contract (NOTES.md): active-low SYNCHRONOUS reset; state advances only
 //   on sample_tick; `sample` is registered and stable between ticks. The MLP is
-//   time-shared over a single MAC, taking many clk cycles AFTER a tick to finish,
-//   but `sample` is valid well before the next tick (the TB gives a large budget).
+//   time-shared over a single MAC, now 2-stage pipelined (S_MUL: split-width
+//   partial products; S_ACC: recombine + accumulate) to close setup timing at
+//   25 MHz -- ~250 clk cycles AFTER a tick to finish (was ~138), still well
+//   inside the 1024-cycle sample budget, and `sample` is valid before the next
+//   tick (the TB gives a large budget).
 //
 //   Memory image (baked into the RTL via `include "neural_weights_init.svh",
 //   which models/neural_train.py GENERATES from the same constants it writes to
@@ -103,10 +106,11 @@ module neural_osc #(
     // ---------------------------------------------------------------------
     localparam [2:0] S_IDLE  = 3'd0,
                      S_FEAT  = 3'd1,   // build the 5 input features
-                     S_MAC   = 3'd2,   // multiply-accumulate one (neuron,input)
-                     S_NEURON= 3'd3,   // finish a neuron: +bias, requant, ReLU, store
-                     S_LDONE = 3'd4,   // finish a layer: copy nxt->act, advance layer
-                     S_OUT   = 3'd5;   // scale + clamp output neuron -> sample
+                     S_MUL   = 3'd2,   // MAC stage 1: split-width partial products (pipelined)
+                     S_ACC   = 3'd3,   // MAC stage 2: recombine partials + accumulate
+                     S_NEURON= 3'd4,   // finish a neuron: +bias, requant, ReLU, store
+                     S_LDONE = 3'd5,   // finish a layer: copy nxt->act, advance layer
+                     S_OUT   = 3'd6;   // scale + clamp output neuron -> sample
 
     reg [2:0]  state;
     reg [1:0]  layer;                 // 0=L1, 1=L2, 2=L3
@@ -115,6 +119,18 @@ module neural_osc #(
     reg [3:0]  feat_idx;             // feature build counter (0..N_IN-1)
     reg [9:0]  wptr;                  // running pointer into the weights region
     reg signed [47:0] acc;            // wide MAC accumulator
+
+    // MAC pipeline registers. The old single-cycle `acc + act*weight` was a 32x16
+    // signed multiply + 48-bit add in one combinational cloud -- the chip's worst
+    // setup path (~62 ns at ss/125C/4v5, well over the 40 ns budget). We split the
+    // multiply into two 16-wide partial products using the signed decomposition
+    //   act = $signed(act[31:16])*2^16 + act[15:0]          (top half signed,
+    //                                                         bottom half >= 0)
+    //   => act*weight = (act_hi*weight)<<16 + (act_lo*weight)
+    // computed in S_MUL (parallel, ~half the logic depth) and recombined +
+    // accumulated in S_ACC (adds only). Bit-exact with the original product.
+    reg signed [31:0] p_hi;           // act[31:16](signed)    * weight(signed) -> 32b
+    reg signed [33:0] p_lo;           // {1'b0,act[15:0]}(>=0) * weight(signed) -> <=33b
 
     // current-layer geometry (combinational from `layer`)
     reg [3:0] cur_nin;
@@ -171,6 +187,8 @@ module neural_osc #(
             feat_idx <= 4'd0;
             wptr     <= 10'd0;
             acc      <= 48'sd0;
+            p_hi     <= 32'sd0;
+            p_lo     <= 34'sd0;
             for (ii = 0; ii < 8; ii = ii + 1) begin
                 act[ii] <= 32'sd0;
                 nxt[ii] <= 32'sd0;
@@ -209,22 +227,38 @@ module neural_osc #(
                     endcase
                     if (feat_idx == N_IN[3:0] - 1) begin
                         feat_idx <= 4'd0;
-                        state    <= S_MAC;
+                        state    <= S_MUL;
                         acc      <= 48'sd0;
                     end else begin
                         feat_idx <= feat_idx + 4'd1;
                     end
                 end
 
-                // ---- MAC: acc += act[in_idx] * weight; advance input ---------
-                S_MAC: begin
-                    acc  <= acc + $signed(act[in_idx]) * $signed(mem[WEIGHT_BASE[9:0] + wptr]);
+                // ---- MAC stage 1: split the 32x16 multiply into two 16-wide
+                //      partial products (computed in parallel this cycle). This
+                //      roughly halves the per-cycle logic depth vs the old
+                //      single-cycle multiply+add that was busting setup. wptr/
+                //      in_idx are held; they advance in S_ACC.
+                S_MUL: begin
+                    p_hi <= $signed(act[in_idx][31:16])
+                            * $signed(mem[WEIGHT_BASE[9:0] + wptr]);
+                    p_lo <= $signed({1'b0, act[in_idx][15:0]})
+                            * $signed(mem[WEIGHT_BASE[9:0] + wptr]);
+                    state <= S_ACC;
+                end
+
+                // ---- MAC stage 2: recombine the partials and accumulate. Adds
+                //      only (no multiply) -> short path. Bit-exact with the old
+                //      acc + act*weight:  (p_hi<<16) + p_lo == act*weight.
+                S_ACC: begin
+                    acc  <= acc + {p_hi, 16'b0} + {{14{p_lo[33]}}, p_lo};
                     wptr <= wptr + 10'd1;
                     if (in_idx == cur_nin - 4'd1) begin
                         in_idx <= 4'd0;
                         state  <= S_NEURON;
                     end else begin
                         in_idx <= in_idx + 4'd1;
+                        state  <= S_MUL;
                     end
                 end
 
@@ -242,7 +276,7 @@ module neural_osc #(
                         state  <= S_LDONE;
                     end else begin
                         neuron <= neuron + 4'd1;
-                        state  <= S_MAC;                // next neuron's MAC
+                        state  <= S_MUL;                // next neuron's MAC
                     end
                 end
 
@@ -257,7 +291,7 @@ module neural_osc #(
                         neuron <= 4'd0;
                         in_idx <= 4'd0;
                         acc    <= 48'sd0;
-                        state  <= S_MAC;
+                        state  <= S_MUL;
                     end
                 end
 

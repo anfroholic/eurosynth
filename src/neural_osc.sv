@@ -17,11 +17,14 @@
 //
 //   Engine contract (NOTES.md): active-low SYNCHRONOUS reset; state advances only
 //   on sample_tick; `sample` is registered and stable between ticks. The MLP is
-//   time-shared over a single MAC, now 2-stage pipelined (S_MUL: split-width
-//   partial products; S_ACC: recombine + accumulate) to close setup timing at
-//   25 MHz -- ~250 clk cycles AFTER a tick to finish (was ~138), still well
-//   inside the 1024-cycle sample budget, and `sample` is valid before the next
-//   tick (the TB gives a large budget).
+//   time-shared over a single MAC, now pipelined to close setup timing at 25 MHz:
+//   the MAC is 3 stages (S_FETCH: registered mem[] read; S_MUL: split-width
+//   partial products; S_ACC: recombine + accumulate) and the neuron finish is 2
+//   stages (S_NFETCH: registered bias read; S_NEURON: +bias, requant, ReLU).
+//   This keeps the 385-word mem[] read mux out of the multiply/add cycles --
+//   ~379 clk cycles AFTER a tick to finish (was ~138), still well inside the
+//   1024-cycle sample budget, and `sample` is valid before the next tick (the
+//   TB gives a large budget).
 //
 //   Memory image (baked into the RTL via `include "neural_weights_init.svh",
 //   which models/neural_train.py GENERATES from the same constants it writes to
@@ -104,15 +107,17 @@ module neural_osc #(
     // ---------------------------------------------------------------------
     // FSM state.
     // ---------------------------------------------------------------------
-    localparam [2:0] S_IDLE  = 3'd0,
-                     S_FEAT  = 3'd1,   // build the 5 input features
-                     S_MUL   = 3'd2,   // MAC stage 1: split-width partial products (pipelined)
-                     S_ACC   = 3'd3,   // MAC stage 2: recombine partials + accumulate
-                     S_NEURON= 3'd4,   // finish a neuron: +bias, requant, ReLU, store
-                     S_LDONE = 3'd5,   // finish a layer: copy nxt->act, advance layer
-                     S_OUT   = 3'd6;   // scale + clamp output neuron -> sample
+    localparam [3:0] S_IDLE  = 4'd0,
+                     S_FEAT  = 4'd1,   // build the 5 input features
+                     S_FETCH = 4'd2,   // MAC stage 0: registered mem[] read of the weight
+                     S_MUL   = 4'd3,   // MAC stage 1: split-width partial products
+                     S_ACC   = 4'd4,   // MAC stage 2: recombine partials + accumulate
+                     S_NFETCH= 4'd5,   // neuron stage 0: registered mem[] read of the bias
+                     S_NEURON= 4'd6,   // neuron stage 1: +bias, requant, ReLU, store
+                     S_LDONE = 4'd7,   // finish a layer: copy nxt->act, advance layer
+                     S_OUT   = 4'd8;   // scale + clamp output neuron -> sample
 
-    reg [2:0]  state;
+    reg [3:0]  state;
     reg [1:0]  layer;                 // 0=L1, 1=L2, 2=L3
     reg [3:0]  neuron;                // output neuron index within the layer
     reg [3:0]  in_idx;                // input index within the neuron
@@ -120,17 +125,24 @@ module neural_osc #(
     reg [9:0]  wptr;                  // running pointer into the weights region
     reg signed [47:0] acc;            // wide MAC accumulator
 
-    // MAC pipeline registers. The old single-cycle `acc + act*weight` was a 32x16
-    // signed multiply + 48-bit add in one combinational cloud -- the chip's worst
-    // setup path (~62 ns at ss/125C/4v5, well over the 40 ns budget). We split the
-    // multiply into two 16-wide partial products using the signed decomposition
-    //   act = $signed(act[31:16])*2^16 + act[15:0]          (top half signed,
-    //                                                         bottom half >= 0)
-    //   => act*weight = (act_hi*weight)<<16 + (act_lo*weight)
-    // computed in S_MUL (parallel, ~half the logic depth) and recombined +
-    // accumulated in S_ACC (adds only). Bit-exact with the original product.
-    reg signed [31:0] p_hi;           // act[31:16](signed)    * weight(signed) -> 32b
-    reg signed [33:0] p_lo;           // {1'b0,act[15:0]}(>=0) * weight(signed) -> <=33b
+    // ---------------------------------------------------------------------
+    // MAC pipeline. The old single-cycle `acc + act*weight` was a 32x16 signed
+    // multiply + 48-bit add, AND it read the 385-word mem[] (a big combinational
+    // mux) in the same cycle -- the two worst setup paths at ss/125C/4v5:
+    //   (1) act -> multiply -> accumulate
+    //   (2) wptr -> mem[] read -> multiply
+    // both ~66 ns, way over the 40 ns budget. We pipeline the MAC into 3 stages
+    // so the mem[] mux and the multiply never share a cycle:
+    //   S_FETCH : wt <= mem[weight]; a_op <= act[in_idx]   (isolates the mem mux)
+    //   S_MUL   : split the multiply into two 16-wide partial products
+    //   S_ACC   : recombine + accumulate (adds only)
+    // The multiply split uses the signed decomposition
+    //   a_op = $signed(a_op[31:16])*2^16 + a_op[15:0]   (top half signed, low >=0)
+    //   => a_op*wt = (hi*wt)<<16 + (lo*wt)              -- bit-exact.
+    reg signed [15:0] wt;             // registered mem[] read (weight, and reused for bias)
+    reg signed [31:0] a_op;           // registered activation operand for the multiply
+    reg signed [31:0] p_hi;           // a_op[31:16](signed)    * wt(signed) -> 32b
+    reg signed [33:0] p_lo;           // {1'b0,a_op[15:0]}(>=0) * wt(signed) -> <=33b
 
     // current-layer geometry (combinational from `layer`)
     reg [3:0] cur_nin;
@@ -187,6 +199,8 @@ module neural_osc #(
             feat_idx <= 4'd0;
             wptr     <= 10'd0;
             acc      <= 48'sd0;
+            wt       <= 16'sd0;
+            a_op     <= 32'sd0;
             p_hi     <= 32'sd0;
             p_lo     <= 34'sd0;
             for (ii = 0; ii < 8; ii = ii + 1) begin
@@ -227,23 +241,29 @@ module neural_osc #(
                     endcase
                     if (feat_idx == N_IN[3:0] - 1) begin
                         feat_idx <= 4'd0;
-                        state    <= S_MUL;
+                        state    <= S_FETCH;
                         acc      <= 48'sd0;
                     end else begin
                         feat_idx <= feat_idx + 4'd1;
                     end
                 end
 
+                // ---- MAC stage 0: registered read of the weight word and the
+                //      activation operand. This pulls the 385-word mem[] mux out
+                //      of the multiply's cycle -- it was the 2nd ~66 ns path
+                //      (wptr -> mem read -> multiply). wptr/in_idx are held.
+                S_FETCH: begin
+                    wt    <= mem[WEIGHT_BASE[9:0] + wptr];
+                    a_op  <= act[in_idx];
+                    state <= S_MUL;
+                end
+
                 // ---- MAC stage 1: split the 32x16 multiply into two 16-wide
-                //      partial products (computed in parallel this cycle). This
-                //      roughly halves the per-cycle logic depth vs the old
-                //      single-cycle multiply+add that was busting setup. wptr/
-                //      in_idx are held; they advance in S_ACC.
+                //      partial products from the now-registered operands (no mem
+                //      mux, no act mux in this path). Computed in parallel.
                 S_MUL: begin
-                    p_hi <= $signed(act[in_idx][31:16])
-                            * $signed(mem[WEIGHT_BASE[9:0] + wptr]);
-                    p_lo <= $signed({1'b0, act[in_idx][15:0]})
-                            * $signed(mem[WEIGHT_BASE[9:0] + wptr]);
+                    p_hi <= $signed(a_op[31:16])        * wt;
+                    p_lo <= $signed({1'b0, a_op[15:0]}) * wt;
                     state <= S_ACC;
                 end
 
@@ -255,19 +275,27 @@ module neural_osc #(
                     wptr <= wptr + 10'd1;
                     if (in_idx == cur_nin - 4'd1) begin
                         in_idx <= 4'd0;
-                        state  <= S_NEURON;
+                        state  <= S_NFETCH;
                     end else begin
                         in_idx <= in_idx + 4'd1;
-                        state  <= S_MUL;
+                        state  <= S_FETCH;
                     end
                 end
 
-                // ---- finish a neuron: + bias, requant >>> QBITS, ReLU, store -
+                // ---- neuron stage 0: registered read of the bias word. Same
+                //      reason as S_FETCH -- keep the mem[] mux out of the cycle
+                //      that also does the 48-bit add + requant (that path,
+                //      wptr -> mem read -> add, would otherwise be ~44 ns too).
+                S_NFETCH: begin
+                    wt    <= mem[WEIGHT_BASE[9:0] + wptr]; // wptr points at the bias word
+                    state <= S_NEURON;
+                end
+
+                // ---- neuron stage 1: + bias, requant >>> QBITS, ReLU, store ---
                 S_NEURON: begin
-                    // wptr now points at the bias word for this neuron.
                     // bias is Q1.14; lift to product scale (<<QBITS), add, requant.
                     nxt[neuron] <= relu_requant(
-                        acc + ($signed(mem[WEIGHT_BASE[9:0] + wptr]) <<< QBITS),
+                        acc + ($signed(wt) <<< QBITS),
                         cur_relu);
                     wptr <= wptr + 10'd1;               // consume the bias word
                     acc  <= 48'sd0;
@@ -276,7 +304,7 @@ module neural_osc #(
                         state  <= S_LDONE;
                     end else begin
                         neuron <= neuron + 4'd1;
-                        state  <= S_MUL;                // next neuron's MAC
+                        state  <= S_FETCH;             // next neuron's MAC
                     end
                 end
 
@@ -291,7 +319,7 @@ module neural_osc #(
                         neuron <= 4'd0;
                         in_idx <= 4'd0;
                         acc    <= 48'sd0;
-                        state  <= S_MUL;
+                        state  <= S_FETCH;
                     end
                 end
 

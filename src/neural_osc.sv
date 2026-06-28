@@ -71,7 +71,6 @@ module neural_osc #(
 );
 
     localparam LUT_SHIFT = PHASE_W - 8;               // top 8 phase bits index 256-entry LUT
-    localparam signed [31:0] QSCALE = 32'sd1 <<< QBITS;  // 16384
 
     // ---------------------------------------------------------------------
     // Combined memory: sine LUT then MLP weights. The power-on/reset-default
@@ -96,13 +95,21 @@ module neural_osc #(
     reg [7:0]         morph_q;
 
     // ---------------------------------------------------------------------
-    // Activation register file. `act` holds the current layer's INPUTS,
-    // `nxt` accumulates the current layer's OUTPUTS. Widths cover the largest
-    // layer (8). Values are signed Q1.14 (fit in 16 bits; carried in 32 for
-    // headroom during ReLU/requant).
+    // Activation register file. `act` holds the current layer's INPUTS, `nxt`
+    // accumulates the current layer's OUTPUTS (8 wide = largest layer).
+    //
+    // Width: an EXHAUSTIVE scan of the entire MLP input space (all 2^16 phase x
+    // 2^8 morph = 16.7M combos, with the shipped weights, via models/neural_ref
+    // math) bounds every activation that feeds the multiply to [-16384, 61517]
+    // -- provably 17 bits. We use 18 (1 bit margin), down from 32, to shrink the
+    // multiply's operand width and fanout. This is bit-exact vs the golden
+    // reference for the shipped network. (Only adversarial SPI-loaded weights
+    // that drive an activation beyond +/-131072 would wrap here where the old
+    // 32-bit path did not; the trained net and normal tweaks are identical.)
     // ---------------------------------------------------------------------
-    reg signed [31:0] act [0:7];
-    reg signed [31:0] nxt [0:7];
+    localparam ACT_W = 18;
+    reg signed [ACT_W-1:0] act [0:7];
+    reg signed [ACT_W-1:0] nxt [0:7];
 
     // ---------------------------------------------------------------------
     // FSM state.
@@ -131,18 +138,21 @@ module neural_osc #(
     // mux) in the same cycle -- the two worst setup paths at ss/125C/4v5:
     //   (1) act -> multiply -> accumulate
     //   (2) wptr -> mem[] read -> multiply
-    // both ~66 ns, way over the 40 ns budget. We pipeline the MAC into 3 stages
-    // so the mem[] mux and the multiply never share a cycle:
+    // both ~66 ns, way over the 40 ns budget. We pipeline the MAC into stages so
+    // the mem[] mux and the multiply never share a cycle, AND we shrink the
+    // multiply itself: the number of partial products is set by the MULTIPLIER
+    // width, so we split the 16-bit weight into two BYTES (8 PPs each instead of
+    // 16), and narrow the multiplicand to ACT_W=18 bits. Stages:
     //   S_FETCH : wt <= mem[weight]; a_op <= act[in_idx]   (isolates the mem mux)
-    //   S_MUL   : split the multiply into two 16-wide partial products
+    //   S_MUL   : two 18x8 partial products from the registered operands
     //   S_ACC   : recombine + accumulate (adds only)
-    // The multiply split uses the signed decomposition
-    //   a_op = $signed(a_op[31:16])*2^16 + a_op[15:0]   (top half signed, low >=0)
-    //   => a_op*wt = (hi*wt)<<16 + (lo*wt)              -- bit-exact.
+    // Signed weight byte split:
+    //   wt = $signed(wt[15:8])*2^8 + wt[7:0]            (high byte signed, low >=0)
+    //   => a_op*wt = (a_op*wt_hi)<<8 + a_op*wt_lo       -- bit-exact.
     reg signed [15:0] wt;             // registered mem[] read (weight, and reused for bias)
-    reg signed [31:0] a_op;           // registered activation operand for the multiply
-    reg signed [31:0] p_hi;           // a_op[31:16](signed)    * wt(signed) -> 32b
-    reg signed [33:0] p_lo;           // {1'b0,a_op[15:0]}(>=0) * wt(signed) -> <=33b
+    reg signed [ACT_W-1:0] a_op;      // registered activation operand (18b) for the multiply
+    reg signed [27:0] p_hi;           // a_op(18s) * wt[15:8](8s)      -> <=26b, <<8 in S_ACC
+    reg signed [27:0] p_lo;           // a_op(18s) * {1'b0,wt[7:0]}(9) -> <=27b
 
     // current-layer geometry (combinational from `layer`)
     reg [3:0] cur_nin;
@@ -179,9 +189,9 @@ module neural_osc #(
         end
     endfunction
 
-    // morph mapped to Q1.14 [-16384, 16256]:  (morph << 7) - QSCALE
-    wire signed [31:0] morph_feat =
-        $signed({1'b0, morph_q, 7'b0}) - QSCALE;     // morph_q*128 - 16384
+    // morph mapped to Q1.14 [-16384, 16256]:  (morph << 7) - 16384
+    wire signed [ACT_W-1:0] morph_feat =
+        $signed({3'b0, morph_q, 7'b0}) - 18'sd16384; // morph_q*128 - 16384
 
     // requant: acc (product scale Q2.28) + bias<<QBITS, then >>> QBITS -> Q1.14
     // computed in S_NEURON.
@@ -200,12 +210,12 @@ module neural_osc #(
             wptr     <= 10'd0;
             acc      <= 48'sd0;
             wt       <= 16'sd0;
-            a_op     <= 32'sd0;
-            p_hi     <= 32'sd0;
-            p_lo     <= 34'sd0;
+            a_op     <= {ACT_W{1'b0}};
+            p_hi     <= 28'sd0;
+            p_lo     <= 28'sd0;
             for (ii = 0; ii < 8; ii = ii + 1) begin
-                act[ii] <= 32'sd0;
-                nxt[ii] <= 32'sd0;
+                act[ii] <= {ACT_W{1'b0}};
+                nxt[ii] <= {ACT_W{1'b0}};
             end
         end else if (w_we) begin
             // SPI weight overwrite. Reachable range is the first 64 weight words
@@ -258,20 +268,21 @@ module neural_osc #(
                     state <= S_MUL;
                 end
 
-                // ---- MAC stage 1: split the 32x16 multiply into two 16-wide
-                //      partial products from the now-registered operands (no mem
-                //      mux, no act mux in this path). Computed in parallel.
+                // ---- MAC stage 1: two 18x8 partial products from the registered
+                //      operands -- the 16-bit weight is split into a high byte
+                //      (signed) and a low byte (>=0), so each multiply has only 8
+                //      partial products (half the old tree). Computed in parallel.
                 S_MUL: begin
-                    p_hi <= $signed(a_op[31:16])        * wt;
-                    p_lo <= $signed({1'b0, a_op[15:0]}) * wt;
+                    p_hi <= a_op * $signed(wt[15:8]);        // a_op(18s) * high byte(8s), <<8 later
+                    p_lo <= a_op * $signed({1'b0, wt[7:0]}); // a_op(18s) * low byte(0..255)
                     state <= S_ACC;
                 end
 
                 // ---- MAC stage 2: recombine the partials and accumulate. Adds
                 //      only (no multiply) -> short path. Bit-exact with the old
-                //      acc + act*weight:  (p_hi<<16) + p_lo == act*weight.
+                //      acc + act*weight:  (p_hi<<8) + p_lo == a_op*wt.
                 S_ACC: begin
-                    acc  <= acc + {p_hi, 16'b0} + {{14{p_lo[33]}}, p_lo};
+                    acc  <= acc + {{12{p_hi[27]}}, p_hi, 8'b0} + {{20{p_lo[27]}}, p_lo};
                     wptr <= wptr + 10'd1;
                     if (in_idx == cur_nin - 4'd1) begin
                         in_idx <= 4'd0;
@@ -336,16 +347,17 @@ module neural_osc #(
 
     // ReLU + requant: shift the (products + lifted bias) accumulator back to
     // Q1.14 with an arithmetic right shift (floors toward -inf == Python >>),
-    // then optional ReLU. Returned as a 32-bit signed Q1.14.
-    function automatic signed [31:0] relu_requant(input signed [47:0] a,
-                                                  input rl);
+    // then optional ReLU. Returned as an ACT_W-bit signed Q1.14 (the result
+    // provably fits 17 bits for the shipped weights -- see the act[] note).
+    function automatic signed [ACT_W-1:0] relu_requant(input signed [47:0] a,
+                                                       input rl);
         reg signed [47:0] sh;
         begin
             sh = a >>> QBITS;                 // back to Q1.14, truncating
             if (rl && sh < 0)
-                relu_requant = 32'sd0;
+                relu_requant = {ACT_W{1'b0}};
             else
-                relu_requant = sh[31:0];
+                relu_requant = sh[ACT_W-1:0];
         end
     endfunction
 

@@ -85,9 +85,17 @@ CLOCK_PERIOD: 40 # 25 MHz
 PL_RESIZER_HOLD_SLACK_MARGIN: 0.35
 GRT_RESIZER_HOLD_SLACK_MARGIN: 0.3
 
-# Increase density for more 
-# logic on your die
-PL_TARGET_DENSITY_PCT: 35
+# Placement target density. The real signoff blocker is ~10k max-slew + ~230
+# max-cap violations at the ss corner (clock-INDEPENDENT design-rule violations),
+# from high-fanout broadcast/mux nets (250-1543 loads) in the engines. At 35 --
+# BELOW the ~56% stdcell utilization -- the global placer runs in maximally-spread
+# mode, scattering those nets' loads across the whole pad-limited die -> long
+# wires -> huge cap -> 6 ns slews the resizer can't buffer away at ss. Raising the
+# target ABOVE utilization lets the placer CLUMP connected logic -> shorter
+# high-fanout wires -> lower cap/slew. Experiment: 35 -> 60. Measure the ss
+# max-slew/max-cap violation counts and ss WNS in the next run; if it helps but
+# isn't enough, push toward 70 and/or add resizer max-slew/cap margins.
+PL_TARGET_DENSITY_PCT: 60
 GRT_ALLOW_CONGESTION: true
 
 # Allow a larger Y displacement

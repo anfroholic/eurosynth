@@ -25,11 +25,23 @@ bash scripts/gen_defines.sh
 
 export MSYS_NO_PATHCONV=1   # Windows/Git-Bash mount-path fix
 
+# Optional fast-iteration overlay. `DEV=1 bash scripts/harden.sh` appends
+# librelane/dev_fast.yaml AFTER config.yaml (later files override), which trims
+# STA/PnR to the 3 corners that matter so a harden takes a few hours instead of
+# ~half a day. Omit DEV for a full 9-corner SIGNOFF run -- the overlay is then
+# not applied, so signoff is the safe default and can't happen by accident.
+DEV_OVERLAY=""
+if [ -n "${DEV:-}" ]; then
+    DEV_OVERLAY="librelane/dev_fast.yaml"
+    echo "[harden] DEV mode: applying ${DEV_OVERLAY} (reduced STA corners -- NOT signoff)"
+fi
+
 # The librelane command line — runs inside the harden container, PDK at /pdk.
 LIBRELANE_CMD="SRAM_DEFINE=SRAM_${SRAM} librelane \
     librelane/slots/slot_${SLOT}.yaml \
     librelane/macros/macros_${MACROS}.yaml \
     librelane/config.yaml \
+    ${DEV_OVERLAY} \
     --pdk ${PDK} --pdk-root /pdk --manual-pdk \
     --scl ${SCL} --pad ${PAD} \
     --save-views-to /work/final"

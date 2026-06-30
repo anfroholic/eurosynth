@@ -1,0 +1,28 @@
+# DEV-ONLY fast-iteration overlay -- NOT for signoff.
+#
+# Applied only when you opt in (DEV=1 bash scripts/harden.sh). Limits STA/PnR to
+# the corners that actually gate us so a harden runs in a few hours instead of
+# ~half a day. The full 9-corner config.yaml is untouched, so a normal run
+# (without DEV=1) is still a complete signoff.
+#
+# Why these three corners:
+#   max_ss_125C_4v50 : worst SETUP, and the max-slew/max-cap corner -- the one we
+#                      are actually trying to close. MUST stay.
+#   min_ff_n40C_5v50 : worst HOLD (fast corner) -- keeps CTS/hold repair sane.
+#   nom_tt_025C_5v00 : the DEFAULT_CORNER -- keeps default-corner steps (IR drop,
+#                      power, RC default) happy.
+# The 6 dropped corners (incl. the other two expensive ss corners) are typical/
+# clean and pass with margin; they don't gate iteration.
+#
+# CAVEATS:
+#   * The expensive part is reporting max_ss itself (~10k slew violations); we
+#     keep it, so expect ~2-3x faster, not 9x. Real speedups come from actually
+#     reducing the violations.
+#   * With fewer corners the resizer optimizes for these only, so the layout (and
+#     thus the exact ss WNS) differs slightly from a full run. Use DEV runs to
+#     read DIRECTION (did slew drop? did WNS move toward 0?). ALWAYS confirm true
+#     closure with a full 9-corner signoff run before believing it.
+STA_CORNERS:
+  - max_ss_125C_4v50
+  - min_ff_n40C_5v50
+  - nom_tt_025C_5v00

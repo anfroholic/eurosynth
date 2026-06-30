@@ -85,18 +85,22 @@ CLOCK_PERIOD: 40 # 25 MHz
 PL_RESIZER_HOLD_SLACK_MARGIN: 0.35
 GRT_RESIZER_HOLD_SLACK_MARGIN: 0.3
 
-# Placement target density. The real signoff blocker is ~10k max-slew + ~230
-# max-cap violations at the ss corner (clock-INDEPENDENT design-rule violations),
-# from high-fanout broadcast/mux nets (250-1543 loads) in the engines. At 35 --
-# BELOW the ~56% stdcell utilization -- the global placer runs in maximally-spread
-# mode, scattering those nets' loads across the whole pad-limited die -> long
-# wires -> huge cap -> 6 ns slews the resizer can't buffer away at ss. Raising the
-# target ABOVE utilization lets the placer CLUMP connected logic -> shorter
-# high-fanout wires -> lower cap/slew. Experiment: 35 -> 60. Measure the ss
-# max-slew/max-cap violation counts and ss WNS in the next run; if it helps but
-# isn't enough, push toward 70 and/or add resizer max-slew/cap margins.
-PL_TARGET_DENSITY_PCT: 60
+# Placement target density. 60 (> the ~55% stdcell util) let the placer clump
+# logic to shorten the high-fanout wires, but it CONGESTED routing -- detailed
+# routing ground for 17 h without converging. Backed off to 50 (routes fast).
+# Density turned out to be the wrong lever anyway (see RUN_POST_GRT_DESIGN_REPAIR
+# below): it traded slew for congestion instead of fixing the root cause.
+PL_TARGET_DENSITY_PCT: 50
 GRT_ALLOW_CONGESTION: true
+
+# THE actual slew/cap fix. By default DRV (max-slew/max-cap/max-fanout) repair
+# runs only POST-GPL -- before routing, on ESTIMATED wire loads. Routing then
+# makes the wires real (and worse) on the 250-1543-fanout nets, and nothing
+# re-repairs them -> ~10k max-slew + ~230 max-cap violations survive to signoff.
+# Turning on post-global-route design repair re-fixes slew/cap AFTER routing with
+# realistic loads (to GRT_DESIGN_REPAIR_MAX_SLEW_PCT/CAP_PCT = 10%). This targets
+# the real mechanism instead of brute-forcing placement.
+RUN_POST_GRT_DESIGN_REPAIR: true
 
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200

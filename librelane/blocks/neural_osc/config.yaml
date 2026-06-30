@@ -32,8 +32,16 @@ CLOCK_PERIOD: 40        # 25 MHz
 # Let the flow size the block from utilization, and keep routing headroom INSIDE the
 # block so it routes fast -- the whole point of going hierarchical is that each
 # block's high-fanout nets stay local and don't congest a chip-sized canvas.
+# First run at 45% drew GPL-0302 ("target density too low for the available free
+# area"): the block is small, so 45% spreads cells out -> long wires -> slew. At
+# block scale the chip-level congestion risk is low (nets stay local), so tighten.
 FP_SIZING: relative
-PL_TARGET_DENSITY_PCT: 45
+PL_TARGET_DENSITY_PCT: 55
+
+# Re-repair design-rule violations (slew/cap) AFTER routing, on real wire loads --
+# not just the post-GPL estimate. This is the lever that actually cleared slew at
+# chip scale; the first block run left it off, which is why 1713 slew survived.
+RUN_POST_GRT_DESIGN_REPAIR: true
 
 # Emit views we can reuse as the macro abstracts.
 PRIMARY_GDSII_STREAMOUT_TOOL: klayout

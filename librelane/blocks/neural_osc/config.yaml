@@ -1,0 +1,39 @@
+# Block-level hardening of neural_osc as a reusable MACRO (pilot for the
+# hierarchical flow -- see docs/hierarchical_macros.md).
+#
+# This hardens ONE engine on its own, with the standard standard-cell flow and NO
+# padring (pads belong only to chip_top). The output views (gds/lef/lib/nl) become
+# the macro artifacts the top level drops in.
+#
+# NOTE: first-draft. Things to confirm on the first run (this is normal for bringing
+# up a block flow):
+#   * the neural_weights_init.svh `include resolves under yosys here (it does in the
+#     chip flow; same VERILOG_FILES handling, so expected OK).
+#   * the flow emits a LEF abstract + per-corner .lib we can reuse as the macro.
+#   * PDN settles with template defaults (tune if the block PDN check complains).
+
+meta:
+  version: 3
+  flow: Classic        # standard-cell block flow (no pads, unlike the Chip flow)
+
+DESIGN_NAME: neural_osc
+
+# Just this one engine. The include resolves relative to neural_osc.sv, same as the
+# chip flow, so no extra include path is needed.
+VERILOG_FILES:
+  - dir::../../../src/neural_osc.sv
+
+# Match the chip clock so the block closes at the speed the chip needs. If the top
+# later needs margin for interconnect to/from the macro pins, we re-harden a touch
+# tighter (e.g. 36 ns) -- but start at parity with chip_top.
+CLOCK_PORT: clk
+CLOCK_PERIOD: 40        # 25 MHz
+
+# Let the flow size the block from utilization, and keep routing headroom INSIDE the
+# block so it routes fast -- the whole point of going hierarchical is that each
+# block's high-fanout nets stay local and don't congest a chip-sized canvas.
+FP_SIZING: relative
+PL_TARGET_DENSITY_PCT: 45
+
+# Emit views we can reuse as the macro abstracts.
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout

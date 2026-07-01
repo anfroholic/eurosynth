@@ -1,0 +1,52 @@
+# Block-level hardening of ks_engine (Karplus-Strong string) as a reusable MACRO.
+# Second engine through the hierarchical flow (see docs/hierarchical_macros.md);
+# neural_osc was the pilot. Standard-cell flow, NO padring (pads live at chip_top).
+#
+# The tuning knobs below are INHERITED from neural_osc's closed recipe
+# (see memory eurosynth-block-drv-closure) as a starting point. ks_engine has a
+# different structure -- a long delay-line/RAM for the string plus a feedback
+# filter -- so density and repair margins may need a nudge. Read the ss-corner
+# violator report, not the warning list, and re-tune per that.
+
+meta:
+  version: 3
+  flow: Classic        # standard-cell block flow (no pads, unlike the Chip flow)
+
+DESIGN_NAME: ks_engine
+
+VERILOG_FILES:
+  - dir::../../../src/ks_engine.sv
+
+# Parity with the chip clock so the block closes at the speed the chip needs.
+CLOCK_PORT: clk
+CLOCK_PERIOD: 40        # 25 MHz
+
+# Small block -> a low target spreads cells out (long wires -> slew). 65 closed
+# neural_osc; back off to ~60 if congestion warns (ks has a wide delay-line that
+# may fill area differently).
+FP_SIZING: relative
+PL_TARGET_DENSITY_PCT: 65
+
+# Re-repair slew/cap AFTER routing on real wire loads -- the lever that clears
+# post-route ss slew.
+RUN_POST_GRT_DESIGN_REPAIR: true
+
+# Keep the resizer's weak/slow DELAY cells out (their edges blow ss max-slew);
+# force hold to be fixed with clean-edge buffers instead.
+EXTRA_EXCLUDED_CELLS:
+  - gf180mcu_fd_sc_mcu7t5v0__dly*
+
+# DRV repair margin: over-correct slew/cap so headroom survives the GRT-estimate ->
+# detailed-route parasitic bump (why residual slew is ss-only and uniformly small).
+# Convergence zone 20->33 OK, 40 diverges (per neural_osc). Start at neural_osc's
+# closing values.
+DESIGN_REPAIR_MAX_SLEW_PCT: 33
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 25
+DESIGN_REPAIR_MAX_CAP_PCT: 28
+
+# Clock-tree max cap: enforce a ceiling below the 0.2pF pin limit so CTS branches
+# instead of overloading the root buffer (design repair can't touch clock nets).
+CTS_MAX_CAP: 0.14
+
+# Emit views we can reuse as the macro abstracts.
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout

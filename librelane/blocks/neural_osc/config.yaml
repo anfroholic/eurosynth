@@ -45,5 +45,41 @@ PL_TARGET_DENSITY_PCT: 65
 # chip scale; the first block run left it off, which is why 1713 slew survived.
 RUN_POST_GRT_DESIGN_REPAIR: true
 
+# Keep the resizer's DELAY cells out of the design. neural_osc is a tight oscillator
+# with short data paths, so hold repair pads heavily -- and it was grabbing 773
+# __dlyb delay cells to do it. Delay cells have deliberately weak/slow edges, so at
+# the ss corner they blow the 3 ns max-slew limit (555 slew violations, ss-only),
+# and hold repair runs AFTER slew repair so nothing re-cleans them. Excluding __dly*
+# forces hold to be fixed with ordinary buffers (clean edges); a few more cells, but
+# no slew. If this over-inflates utilization/congestion, back PL_TARGET_DENSITY_PCT
+# off a couple points.
+EXTRA_EXCLUDED_CELLS:
+  - gf180mcu_fd_sc_mcu7t5v0__dly*
+
+# Post-route slew leaks through only at the ss corner: DRV repair runs on GRT-
+# ESTIMATED wire loads, then detailed routing makes the wires heavier and nothing
+# re-repairs after. So nets repaired to just-under-3ns at estimate land at 3.3-3.8ns
+# once real routing + the slow ss corner hit -- 627 violations, every one only
+# 0.3-0.8ns over, ss-only. Give the repair a MODEST extra slew/cap margin so it
+# over-corrects and leaves headroom for the post-route bump. We have +12ns of setup
+# slack (setup WNS +12.3) to spend on the extra buffers.
+#   NOTE: margin is a % reduction of the 3ns limit. 40% (target 1.8ns) made the
+#   post-GPL repair see 8565 "violations" on estimated loads and DIVERGE (LibreLane
+#   quit). Baseline 20% converged with 627 residual slews. 28% converged and cut
+#   them to 29 -- all now only 0.02-0.14ns over. 33% (target ~2.0ns) closes that
+#   last sliver while staying comfortably below the 40% divergence threshold.
+DESIGN_REPAIR_MAX_SLEW_PCT: 33
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 25
+DESIGN_REPAIR_MAX_CAP_PCT: 28
+
+# Clock-tree max cap. The only residual after DRV closure was 4 max-cap violations,
+# ALL on clock buffers -- design repair can't touch clock nets (don't-touch), so
+# they need CTS. Root cause: CTS_MAX_CAP was unset, so TritonCTS never enforced the
+# 0.2pF pin limit and let the clkbuf_16 root drive 16 sub-buffers -> 0.424pF (2.1x
+# over). Give CTS a 0.14pF ceiling so it adds a branch level; 0.14 (not 0.2) leaves
+# headroom for the CTS-estimate -> detailed-route parasitic bump, same gap we saw on
+# slew. Plenty of setup (+12ns) / hold (+0.26ns) margin to absorb the extra level.
+CTS_MAX_CAP: 0.14
+
 # Emit views we can reuse as the macro abstracts.
 PRIMARY_GDSII_STREAMOUT_TOOL: klayout

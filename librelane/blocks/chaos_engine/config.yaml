@@ -1,0 +1,50 @@
+# Block-level hardening of chaos_engine (iterative chaotic map) as a reusable MACRO.
+# Third engine through the hierarchical flow (see docs/hierarchical_macros.md).
+# Standard-cell flow, NO padring (pads live at chip_top).
+#
+# The tuning knobs below are INHERITED from neural_osc's closed recipe
+# (see memory eurosynth-block-drv-closure) as a starting point. chaos_engine is
+# multiply-heavy (the map iteration), so its critical path and congestion profile
+# differ -- read the ss-corner violator report and re-tune density/repair margins
+# per that, not the warning list.
+
+meta:
+  version: 3
+  flow: Classic        # standard-cell block flow (no pads, unlike the Chip flow)
+
+DESIGN_NAME: chaos_engine
+
+VERILOG_FILES:
+  - dir::../../../src/chaos_engine.sv
+
+# Parity with the chip clock so the block closes at the speed the chip needs.
+CLOCK_PORT: clk
+CLOCK_PERIOD: 40        # 25 MHz
+
+# Small block -> a low target spreads cells out (long wires -> slew). 65 closed
+# neural_osc; back off to ~60 if the multiplier logic congests routing.
+FP_SIZING: relative
+PL_TARGET_DENSITY_PCT: 65
+
+# Re-repair slew/cap AFTER routing on real wire loads -- the lever that clears
+# post-route ss slew.
+RUN_POST_GRT_DESIGN_REPAIR: true
+
+# Keep the resizer's weak/slow DELAY cells out (their edges blow ss max-slew);
+# force hold to be fixed with clean-edge buffers instead.
+EXTRA_EXCLUDED_CELLS:
+  - gf180mcu_fd_sc_mcu7t5v0__dly*
+
+# DRV repair margin: over-correct slew/cap so headroom survives the GRT-estimate ->
+# detailed-route parasitic bump. Convergence zone 20->33 OK, 40 diverges (per
+# neural_osc). Start at neural_osc's closing values.
+DESIGN_REPAIR_MAX_SLEW_PCT: 33
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 25
+DESIGN_REPAIR_MAX_CAP_PCT: 28
+
+# Clock-tree max cap: enforce a ceiling below the 0.2pF pin limit so CTS branches
+# instead of overloading the root buffer (design repair can't touch clock nets).
+CTS_MAX_CAP: 0.14
+
+# Emit views we can reuse as the macro abstracts.
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout

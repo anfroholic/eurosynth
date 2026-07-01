@@ -129,11 +129,9 @@ def main():
     print(f"   Timing-closed  : {GREEN+'YES'+OFF if timing_closed else RED+'NO'+OFF}"
           "   (setup / hold / slew / cap)")
     if manufacturable and not timing_closed:
-        print(f"\n   {YEL}This is the trap:{OFF} the layout is fabricable, so the")
-        print("   manufacturability report says 'Passed' -- but it is NOT timing-closed.")
-        print("   It may well work on the bench at room temperature (check the tt/ff")
-        print("   corners above -- they often pass), yet fail the guaranteed worst-case")
-        print("   corner (ss = hot + low voltage). That is not a clean signoff.")
+        print(f"\n   {YEL}Fabricable, but not timing-closed.{OFF} The manufacturability")
+        print("   report only checks geometry, so it says 'Passed' -- but the worst-case")
+        print("   corner (ss = hot + low voltage) does not meet timing. Not a clean signoff.")
     print("=" * 64)
 
     sys.exit(1 if fails else 0)

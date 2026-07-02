@@ -21,21 +21,33 @@ VERILOG_FILES:
 CLOCK_PORT: clk
 CLOCK_PERIOD: 40        # 25 MHz
 
-# ks is big with some very long nets (die ~1131um, 4161 flops = the 256-deep delay
-# line, longest net 1162um spanning the whole die) -> ss-slew violations. Lowering
-# density to 55 DID crush slew (45 -> 8) by giving routing room, BUT it grew the die
-# and with it the CLOCK SKEW (worst-hold skew -1.88ns @ max_ss) -> a NEW hold
-# violation on the `period` config inputs that nothing fixed (post-route repair only
-# re-does slew/cap, not hold). So density is a double-edged lever here. Keep 65 (proven
-# good hold +0.285, low skew) and instead fix slew with a TARGETED long-wire repair
-# (GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH below), which runs post-route and doesn't grow the
-# die. (neural_osc, being small, needed the opposite -- HIGHER density.)
+# ks is big with very long nets (die ~1131um, 4161 flops = the 256-deep delay line,
+# longest net 1162um). It has a slew-vs-hold TENSION via density:
+#   density 65 no WL       -> slew 45, hold OK
+#   density 65 + WL 300    -> slew 22, hold OK   (best hold-safe; WL 200 over-buffers
+#                                                 -> congestion -> slew 61, worse)
+#   density 55 no WL       -> slew 8,  hold FAIL (-0.64: roomier die crushes slew but
+#                                                 grows clock skew -1.88ns @ max_ss,
+#                                                 breaking hold on the config inputs;
+#                                                 post-route repair only redoes slew/cap)
+# The low-density slew win (8) is far better, so take density 55 for the room and fix
+# the skew-driven hold DIRECTLY with CTS_BALANCE_LEVELS (equalize clock latency across
+# the bigger tree) instead of retreating to density 65's slew floor of 22.
+# (neural_osc, being small, needed the OPPOSITE -- higher density.)
 FP_SIZING: relative
-PL_TARGET_DENSITY_PCT: 65
+PL_TARGET_DENSITY_PCT: 55
 
 # Re-repair slew/cap AFTER routing on real wire loads -- the lever that clears
 # post-route ss slew.
 RUN_POST_GRT_DESIGN_REPAIR: true
+
+# Antenna: the standard repair (RUN_ANTENNA_REPAIR, jumpers + targeted diodes during
+# routing) left 1 violation after the density-55/balanced-clock routing. DO NOT use
+# RUN_HEURISTIC_DIODE_INSERTION on this dense block -- it bulk-inserts diodes on
+# thousands of nets, spiking utilization -> congestion cascade (slew 9->1936, fanout
+# 0->2583, hold +0.19->-1.15). Instead give the GENTLE targeted repair more iterations.
+DRT_ANTENNA_REPAIR_ITERS: 8
+GRT_ANTENNA_REPAIR_ITERS: 6
 
 # Keep the resizer's weak/slow DELAY cells out (their edges blow ss max-slew);
 # force hold to be fixed with clean-edge buffers instead.
@@ -47,10 +59,9 @@ EXTRA_EXCLUDED_CELLS:
 # Convergence zone 20->33 OK, 40 diverges (per neural_osc). Start at neural_osc's
 # closing values.
 DESIGN_REPAIR_MAX_SLEW_PCT: 33
-GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 33   # 30 left 36 ss-slew data nets (ks is big -> long
-                                     # wires); 33 pushes post-route repair harder.
-                                     # N=3 in engine.sdc protects setup from the extra
-                                     # buffering. (36 diverges; 33 is under that.)
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 33   # density55+WL300+balance gives slew ~9 (~3 nets;
+                                     # a 6-fanout cluster 161ps over + 2 floor nets) --
+                                     # near the physical floor for this big block.
 DESIGN_REPAIR_MAX_CAP_PCT: 28
 
 # Targeted long-wire repair (ks-specific). ks has nets up to 1162um (delay-line read
@@ -58,8 +69,10 @@ DESIGN_REPAIR_MAX_CAP_PCT: 28
 # buffer insertion on any wire longer than 300um, both pre-route (on the GPL estimate)
 # and post-route (GRT). This fixes slew by SHORTENING the RC segments -- without
 # growing the die (so clock skew / hold stay put, unlike the density-55 experiment).
-# 300um ~= 1/4 die: aggressive enough to chop the cross-die nets, not so small it
-# over-buffers everything.
+# 300um is the WL sweet spot (cut slew 45->22, cap 4->0 at density 65); 200um
+# over-buffered -> congestion -> slew 61 (worse). Keep 300um here at density 55, where
+# the roomier die already has slew ~8 and there's space for the buffers without
+# congesting.
 DESIGN_REPAIR_MAX_WIRE_LENGTH: 300
 GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH: 300
 
@@ -70,6 +83,12 @@ CTS_SINK_CLUSTERING_SIZE: 8
 CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
 CTS_MAX_SLEW: 0.1
 CTS_MAX_CAP: 0.14
+
+# Balance the clock-tree levels so insertion delay is equalized across the (bigger,
+# density-55) die -> less skew (was -1.88ns @ max_ss) -> recover the hold that the
+# roomier die broke on the config inputs. This lets us keep density 55 for the slew win
+# without the hold regression.
+CTS_BALANCE_LEVELS: true
 
 # ENGINE-CONTRACT MULTICYCLE. ks_engine advances its Karplus-Strong delay-line/filter
 # ONLY on sample_tick (clk/1024, ~48 kHz), so its deep path has ~1024 clocks, not one.

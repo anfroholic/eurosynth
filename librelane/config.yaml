@@ -29,24 +29,19 @@ meta:
     #Checker.LVS: null
 
 DESIGN_NAME: chip_top
+# HIERARCHICAL assembly: the 5 engines are dropped in as pre-hardened MACROS
+# (librelane/macros/engines.yaml), NOT synthesized here. So VERILOG_FILES is just the
+# thin top-level GLUE: the padframe (chip_top), the core wrapper (chip_core), the
+# spine (voice mux + config distribution), and the SPI config block. Synthesis sees
+# each engine as a black box via its ip/<engine>/vh/<engine>.vh declaration.
+# BONUS: the old flat-flow caveat -- neural_osc's models/neural_weights.hex $readmemh
+# needing an absolute path at chip synthesis -- is GONE: neural_osc is now a macro with
+# the weights already baked into its GDS, so chip synthesis never elaborates it.
 VERILOG_FILES:
 - dir::../src/chip_top.sv
 - dir::../src/chip_core.sv
 - dir::../src/synth_spine.sv
-- dir::../src/ks_engine.sv
 - dir::../src/spi_config.sv
-- dir::../src/bytebeat.sv
-- dir::../src/chaos_engine.sv
-- dir::../src/sid_voice.sv
-- dir::../src/sid_engine.sv
-- dir::../src/neural_osc.sv
-# NOTE: neural_osc reads models/neural_weights.hex via $readmemh at elaboration.
-# For a hardening run the synthesizer cwd is the run dir, not the repo root, so
-# that relative path must be made absolute (set the neural_osc WFILE param, or
-# convert the weights to localparam initial values) before a GDSII flow. The
-# standalone/spine/chip_core simulation rail runs from the repo root, where the
-# relative path resolves. Full multi-engine hardening is a follow-up (see
-# docs/engines_plan.md "Verification": 5 engines is tight on the half slot).
 
 # Enable plugin for better SystemVerilog support
 # USE_SLANG: True

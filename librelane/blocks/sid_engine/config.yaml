@@ -1,0 +1,66 @@
+# Block-level hardening of sid_engine (voice 3: 3-voice SID-style synth) as a reusable
+# MACRO. Fifth/last engine through the hierarchical flow. Standard-cell flow, NO
+# padring (pads live at chip_top). Recipe inherited from the closed engines; sid is the
+# BIGGEST engine (three sid_voice phase-accumulator oscillators + waveform/ring/sync +
+# mix), so it is the most likely to need per-block tuning -- expect it to behave like
+# ks_engine (multicycle-critical setup, possible long-wire slew).
+
+meta:
+  version: 3
+  flow: Classic        # standard-cell block flow (no pads, unlike the Chip flow)
+
+DESIGN_NAME: sid_engine
+
+# sid_engine instantiates sid_voice (three of them), so BOTH files are needed.
+VERILOG_FILES:
+  - dir::../../../src/sid_engine.sv
+  - dir::../../../src/sid_voice.sv
+
+# Parity with the chip clock so the block closes at the speed the chip needs.
+CLOCK_PORT: clk
+CLOCK_PERIOD: 40        # 25 MHz
+
+# Start at 65. IMPORTANT (ks lesson): if sid shows ss-slew, DO NOT just lower density
+# to fix it -- a bigger die grows clock skew and breaks HOLD on the config inputs
+# (post-route repair only re-does slew/cap, not hold). Instead fix slew with the
+# targeted GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH lever (see the commented knob below), which
+# runs post-route and doesn't grow the die.
+FP_SIZING: relative
+PL_TARGET_DENSITY_PCT: 65
+
+# Re-repair slew/cap AFTER routing on real wire loads -- the lever that clears
+# post-route ss slew.
+RUN_POST_GRT_DESIGN_REPAIR: true
+
+# Keep the resizer's weak/slow DELAY cells out (their edges blow ss max-slew); force
+# hold to be fixed with clean-edge buffers instead.
+EXTRA_EXCLUDED_CELLS:
+  - gf180mcu_fd_sc_mcu7t5v0__dly*
+
+# DRV repair margin. Convergence ceiling is between 33 and 36 (36 diverges); 33 is safe.
+DESIGN_REPAIR_MAX_SLEW_PCT: 33
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 33
+DESIGN_REPAIR_MAX_CAP_PCT: 28
+
+# If sid shows long-wire ss-slew like ks did, UNCOMMENT these (buffer any wire > 300um,
+# pre- and post-route) instead of lowering density:
+# DESIGN_REPAIR_MAX_WIRE_LENGTH: 300
+# GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH: 300
+
+# Clock-tree DRV closure (proven on the other engines): bound leaf clusters to 8 so no
+# clock buffer exceeds the fanout/cap limits, plus explicit CTS slew+cap ceilings.
+CTS_SINK_CLUSTERING_SIZE: 8
+CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
+CTS_MAX_SLEW: 0.1
+CTS_MAX_CAP: 0.14
+
+# ENGINE-CONTRACT MULTICYCLE. sid advances only on sample_tick (clk/1024), and its
+# config inputs (v*_freq, v*_wave, v*_pw, ring_en, sync_en, ...) are quasi-static -- so
+# the shared engine.sdc relaxes internal reg->reg + config-input paths to multicycle
+# (interface stays single-cycle). This is what makes the deep 3-voice arithmetic close.
+# See librelane/blocks/engine.sdc.
+PNR_SDC_FILE: dir::../engine.sdc
+SIGNOFF_SDC_FILE: dir::../engine.sdc
+
+# Emit views we can reuse as the macro abstracts.
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout

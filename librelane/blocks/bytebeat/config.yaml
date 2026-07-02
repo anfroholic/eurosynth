@@ -1,0 +1,58 @@
+# Block-level hardening of bytebeat (voice 6: free-running integer formula) as a
+# reusable MACRO. Fourth engine through the hierarchical flow. Standard-cell flow,
+# NO padring (pads live at chip_top). Recipe inherited from the closed engines
+# (neural_osc/chaos/ks) -- see memory eurosynth-block-drv-closure + the per-block
+# rationale below.
+
+meta:
+  version: 3
+  flow: Classic        # standard-cell block flow (no pads, unlike the Chip flow)
+
+DESIGN_NAME: bytebeat
+
+VERILOG_FILES:
+  - dir::../../../src/bytebeat.sv
+
+# Parity with the chip clock so the block closes at the speed the chip needs.
+CLOCK_PORT: clk
+CLOCK_PERIOD: 40        # 25 MHz
+
+# bytebeat is SMALL (a formula LUT + a t counter), so like neural_osc it wants HIGH
+# density -- a low target spreads its few cells out into long wires -> slew. Start at
+# 65 (closed neural_osc). If GPL-0302 "target density too low" warns, it's fine; if
+# congestion warns, back off a couple points.
+FP_SIZING: relative
+PL_TARGET_DENSITY_PCT: 65
+
+# Re-repair slew/cap AFTER routing on real wire loads -- the lever that clears
+# post-route ss slew.
+RUN_POST_GRT_DESIGN_REPAIR: true
+
+# Keep the resizer's weak/slow DELAY cells out (their edges blow ss max-slew); force
+# hold to be fixed with clean-edge buffers instead.
+EXTRA_EXCLUDED_CELLS:
+  - gf180mcu_fd_sc_mcu7t5v0__dly*
+
+# DRV repair margin: over-correct slew/cap so headroom survives the GRT-estimate ->
+# detailed-route parasitic bump. Convergence ceiling is between 33 and 36 (36 diverges
+# -- 3h thrash); 33 is the safe max.
+DESIGN_REPAIR_MAX_SLEW_PCT: 33
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 33
+DESIGN_REPAIR_MAX_CAP_PCT: 28
+
+# Clock-tree DRV closure (proven on the other engines): bound leaf clusters to 8 so no
+# clock buffer exceeds the fanout/cap limits, plus explicit CTS slew+cap ceilings.
+CTS_SINK_CLUSTERING_SIZE: 8
+CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
+CTS_MAX_SLEW: 0.1
+CTS_MAX_CAP: 0.14
+
+# ENGINE-CONTRACT MULTICYCLE. bytebeat advances only on sample_tick (clk/1024), and
+# its config inputs (formula_sel, t_inc) are quasi-static -- so the shared engine.sdc
+# relaxes internal reg->reg + config-input paths to multicycle (interface stays
+# single-cycle). See librelane/blocks/engine.sdc.
+PNR_SDC_FILE: dir::../engine.sdc
+SIGNOFF_SDC_FILE: dir::../engine.sdc
+
+# Emit views we can reuse as the macro abstracts.
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout

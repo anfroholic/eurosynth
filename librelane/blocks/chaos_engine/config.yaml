@@ -39,12 +39,28 @@ EXTRA_EXCLUDED_CELLS:
 # detailed-route parasitic bump. Convergence zone 20->33 OK, 40 diverges (per
 # neural_osc). Start at neural_osc's closing values.
 DESIGN_REPAIR_MAX_SLEW_PCT: 33
-GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 25
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 30   # 36 DIVERGES (post-GRT repair thrashes forever);
+                                     # 30 converges (proven on neural_osc pass 1).
 DESIGN_REPAIR_MAX_CAP_PCT: 28
 
-# Clock-tree max cap: enforce a ceiling below the 0.2pF pin limit so CTS branches
-# instead of overloading the root buffer (design repair can't touch clock nets).
+# Clock-tree DRV closure (proven on neural_osc): bound the leaf clusters so no clock
+# buffer exceeds the fanout/cap limits, and give CTS explicit slew+cap ceilings.
+# CTS_MAX_CAP alone does nothing without CTS_SINK_CLUSTERING_SIZE (leaves default to
+# ~20 sinks). See neural_osc/config.yaml for the full rationale.
+CTS_SINK_CLUSTERING_SIZE: 8
+CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
+CTS_MAX_SLEW: 0.1
 CTS_MAX_CAP: 0.14
+
+# ENGINE-CONTRACT MULTICYCLE. chaos_engine's map (Lorenz/logistic, 16x17 & 18x16
+# multiplies) advances ONLY on sample_tick (clk/1024, ~48 kHz) -- the state FFs
+# recirculate between ticks. So the deep map path has ~1024 clocks to settle, not one,
+# and STA's single-cycle view reported a false -12.5 ns setup at max_ss. engine.sdc
+# adds a reg->reg multicycle (interface paths stay single-cycle) to tell STA the
+# truth. Applied to BOTH PnR (so the resizer doesn't waste area chasing a non-
+# violation) and signoff.
+PNR_SDC_FILE: dir::../engine.sdc
+SIGNOFF_SDC_FILE: dir::../engine.sdc
 
 # Emit views we can reuse as the macro abstracts.
 PRIMARY_GDSII_STREAMOUT_TOOL: klayout

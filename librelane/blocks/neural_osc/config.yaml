@@ -69,17 +69,40 @@ EXTRA_EXCLUDED_CELLS:
 #   them to 29 -- all now only 0.02-0.14ns over. 33% (target ~2.0ns) closes that
 #   last sliver while staying comfortably below the 40% divergence threshold.
 DESIGN_REPAIR_MAX_SLEW_PCT: 33
-GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 25
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 33   # 30 CONVERGED with 3 ss-slew nets left (long-wire
+                                     # _12181_, 47-420ps over); 33 pushes post-route
+                                     # repair harder to clear them. 36 DIVERGED (3h
+                                     # thrash) -- ceiling is between 33 and 36, NOT
+                                     # above 40 as first assumed. Setup is +12ns so
+                                     # extra buffering is free here.
 DESIGN_REPAIR_MAX_CAP_PCT: 28
 
-# Clock-tree max cap. The only residual after DRV closure was 4 max-cap violations,
-# ALL on clock buffers -- design repair can't touch clock nets (don't-touch), so
-# they need CTS. Root cause: CTS_MAX_CAP was unset, so TritonCTS never enforced the
-# 0.2pF pin limit and let the clkbuf_16 root drive 16 sub-buffers -> 0.424pF (2.1x
-# over). Give CTS a 0.14pF ceiling so it adds a branch level; 0.14 (not 0.2) leaves
-# headroom for the CTS-estimate -> detailed-route parasitic bump, same gap we saw on
-# slew. Plenty of setup (+12ns) / hold (+0.26ns) margin to absorb the extra level.
+# Clock-tree DRV closure. After DRV repair the residuals were all CLOCK-tree buffers
+# (design repair can't touch clock nets -- they're don't-touch -- so only CTS can):
+#   * 4 max-cap: root clkbuf_16 (clkbuf_0_clk) drove 0.424pF (2.1x the 0.2pF limit),
+#     plus 3 leaf buffers barely over; their OUTPUT SLEW was fine (root 0.78ns << 3ns),
+#     so the cell drives it cleanly -- but it trips the global 0.2pF cap constraint.
+#   * 111 max-fanout: leaf buffers driving 14-16 sinks vs the global fanout limit 10.
+# Setting CTS_MAX_CAP alone did NOTHING (byte-identical tree) because nothing bounded
+# the LEAF CLUSTER size first -- CTS_SINK_CLUSTERING_SIZE was null, so OpenROAD used
+# its ~20-sink default and each leaf legitimately drove 14. Bound the clusters to 8
+# (< the 10 fanout limit) so each leaf drives <=8 sinks -> clears leaf fanout AND cuts
+# leaf cap; tighten the diameter so clusters stay physically compact (less wire cap);
+# and give CTS an explicit slew + cap ceiling so the mid/root levels get an extra
+# branch instead of overloading one buffer. 106 clock sinks / 8 per leaf forces a
+# balanced multi-level tree. Plenty of setup (+12ns) / hold (+0.26ns) margin to
+# absorb the added buffer levels (extra insertion delay / skew).
+CTS_SINK_CLUSTERING_SIZE: 8
+CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
+CTS_MAX_SLEW: 0.1
 CTS_MAX_CAP: 0.14
+
+# ENGINE-CONTRACT MULTICYCLE (consistency with chaos/ks). neural_osc closes setup
+# single-cycle (+12ns) so it doesn't NEED the multicycle, but it IS an engine on the
+# sample_tick contract, so it gets the same shared SDC -- uniform across all engines
+# for the eventual chip_top assembly. Harmless here (adds setup margin only).
+PNR_SDC_FILE: dir::../engine.sdc
+SIGNOFF_SDC_FILE: dir::../engine.sdc
 
 # Emit views we can reuse as the macro abstracts.
 PRIMARY_GDSII_STREAMOUT_TOOL: klayout

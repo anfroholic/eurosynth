@@ -40,7 +40,6 @@ fi
 LIBRELANE_CMD="SRAM_DEFINE=SRAM_${SRAM} librelane \
     librelane/slots/slot_${SLOT}.yaml \
     librelane/macros/macros_${MACROS}.yaml \
-    librelane/macros/engines.yaml \
     librelane/config.yaml \
     ${DEV_OVERLAY} \
     --pdk ${PDK} --pdk-root /pdk --manual-pdk \

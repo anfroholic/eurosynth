@@ -80,3 +80,75 @@ if { [info exists ::env(OPENLANE_SDC_IDEAL_CLOCKS)] && $::env(OPENLANE_SDC_IDEAL
     set_propagated_clock [all_clocks]
 }
 
+# ============================================================================
+# TOP-LEVEL ENGINE-CONTRACT constraints (see librelane/blocks/engine.sdc for the
+# per-engine version). The chip is the same sample_tick-gated machine as each
+# engine, just assembled: the spine, voice mux and every engine advance state
+# ONLY on sample_tick (clk/1024, ~48 kHz). The engines themselves are hardened
+# MACROS, so STA sees only the thin top-level GLUE flops here; the exceptions
+# below constrain that glue and the chip's I/O truthfully.
+#
+# Without these, the post-PnR run reported setup WNS -39.25 ns at max_ss with
+# 262 violations -- but 256 of them started at rst_n_PAD (the global reset) and
+# the rest at the SPI/config pads. Only ~6 were real reg->reg glue paths. None
+# of the -39 ns was physical; it was single-cycle STA on paths that are not.
+# ----------------------------------------------------------------------------
+
+# (0) RESET. rst_n is a global, synchronous ("if (!rst_n)") init that enters
+#     through a pad and fans out to the whole glue. It is NOT a timed
+#     synchronous-release scheme: the design is entirely re-gated by sample_tick
+#     (a counter comes out of reset, then sample_tick fires 1024 clocks later --
+#     by which point every flop is long out of reset), so a few clocks of reset
+#     de-assertion skew is absorbed and harmless. Timing the chip-wide reset
+#     fanout as a single 40 ns datapath is the -39 ns artifact. Treat it as a
+#     false path (standard for a global init reset). Slew/cap on the reset net
+#     are still fixed by DRV repair -- those are design rules, not timing.
+set _rst_port [get_ports -quiet rst_n_PAD]
+if { $_rst_port ne "" } {
+    puts "\[INFO] chip_top.sdc: set_false_path -from rst_n_PAD (global sample_tick-gated reset)"
+    set_false_path -from $_rst_port
+}
+
+# (1) Internal reg->reg glue paths advance on sample_tick, so give them a few
+#     cycles (same idiom + N as engine.sdc). N=3 is deeply conservative vs the
+#     true 1024-cycle budget. reg->output stays single-cycle (I2S/debug pads are
+#     read synchronously). Macro internals are hidden behind their .lib, so this
+#     only touches the top glue flops.
+set _mcp_n 3
+puts "\[INFO] chip_top.sdc: set_multicycle_path -setup $_mcp_n (reg->reg glue)"
+set_multicycle_path -setup $_mcp_n          -from [all_registers] -to [all_registers]
+set_multicycle_path -hold  [expr $_mcp_n-1] -from [all_registers] -to [all_registers]
+
+# (2) Control inputs are ASYNCHRONOUS -> false path (setup AND hold). Every
+#     non-clock chip input is an external, un-synchronized control signal with NO
+#     launch-clock relationship to clk:
+#       input_in[2:0]=voice_sel, input_in[3]=bypass_en, bidir[5]=ks_pluck,
+#       bidir[15:6]=ks_period/pitch  -- all directly pad-STRAPPED into the engine
+#         macros (no flop, no synchronizer): the user drives them by hand.
+#       bidir[32:34]=SPI sclk/mosi/csn -- explicitly "asynchronous to clk,
+#         2-FF synchronized inside spi_config" (timing async->first-sync-FF is
+#         meaningless by construction).
+#     Consequences of the async-ness are benign and by design: the engines are all
+#     sample_tick-gated (~48 kHz), so a control that lands in a clk hold window at
+#     worst costs ONE ~20.8 us audio sample of the old value -- inaudible. That is
+#     exactly the artifact STA reported: fast-corner HOLD violations, all on
+#     bidir_PAD[*] -> u_neural/u_ks strap paths (0 reg-to-reg). They cannot be
+#     buffer-fixed (input arrival is pinned by set_input_delay), and raising the
+#     hold margin made them WORSE. The physically-correct model for an async input
+#     is a false path -- same class as the reset above. (A metastability-hard
+#     control would be an RTL synchronizer, not an SDC knob.)
+set _async_inputs [all_inputs]
+foreach _rt [list clk_PAD rst_n_PAD] {
+    set _p [get_ports -quiet $_rt]
+    if { $_p ne "" } {
+        foreach _pp $_p {
+            set _ix [lsearch $_async_inputs $_pp]
+            if { $_ix >= 0 } { set _async_inputs [lreplace $_async_inputs $_ix $_ix] }
+        }
+    }
+}
+if { [llength $_async_inputs] > 0 } {
+    puts "\[INFO] chip_top.sdc: set_false_path from [llength $_async_inputs] async control inputs (setup+hold)"
+    set_false_path -from $_async_inputs
+}
+

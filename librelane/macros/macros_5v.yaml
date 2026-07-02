@@ -77,3 +77,158 @@ MACROS:
       wafer_space_logo:
         location: [26, "expr::$DIE_AREA[3] - 169.25"]
         orientation: N
+
+  # ---- eurosynth ENGINE macros (hierarchical assembly) ----
+  # Hardened standalone in librelane/blocks/<engine>/, views in ip/<engine>/.
+  # MUST live in the SAME MACROS dict as the markers above: LibreLane does not
+  # deep-merge MACROS across files (a separate file would override the markers).
+  ks_engine:
+    gds:
+      - dir::../ip/ks_engine/gds/ks_engine.gds
+    lef:
+      - dir::../ip/ks_engine/lef/ks_engine.lef
+    vh:
+      - dir::../ip/ks_engine/vh/ks_engine.vh
+    lib:
+      max_ff_n40C_5v50:
+        - dir::../ip/ks_engine/lib/max_ff_n40C_5v50/ks_engine__max_ff_n40C_5v50.lib
+      max_ss_125C_4v50:
+        - dir::../ip/ks_engine/lib/max_ss_125C_4v50/ks_engine__max_ss_125C_4v50.lib
+      max_tt_025C_5v00:
+        - dir::../ip/ks_engine/lib/max_tt_025C_5v00/ks_engine__max_tt_025C_5v00.lib
+      min_ff_n40C_5v50:
+        - dir::../ip/ks_engine/lib/min_ff_n40C_5v50/ks_engine__min_ff_n40C_5v50.lib
+      min_ss_125C_4v50:
+        - dir::../ip/ks_engine/lib/min_ss_125C_4v50/ks_engine__min_ss_125C_4v50.lib
+      min_tt_025C_5v00:
+        - dir::../ip/ks_engine/lib/min_tt_025C_5v00/ks_engine__min_tt_025C_5v00.lib
+      nom_ff_n40C_5v50:
+        - dir::../ip/ks_engine/lib/nom_ff_n40C_5v50/ks_engine__nom_ff_n40C_5v50.lib
+      nom_ss_125C_4v50:
+        - dir::../ip/ks_engine/lib/nom_ss_125C_4v50/ks_engine__nom_ss_125C_4v50.lib
+      nom_tt_025C_5v00:
+        - dir::../ip/ks_engine/lib/nom_tt_025C_5v00/ks_engine__nom_tt_025C_5v00.lib
+    instances:
+      i_chip_core.u_spine.u_ks:
+        location: [480, 480]
+        orientation: N
+  chaos_engine:
+    gds:
+      - dir::../ip/chaos_engine/gds/chaos_engine.gds
+    lef:
+      - dir::../ip/chaos_engine/lef/chaos_engine.lef
+    vh:
+      - dir::../ip/chaos_engine/vh/chaos_engine.vh
+    lib:
+      max_ff_n40C_5v50:
+        - dir::../ip/chaos_engine/lib/max_ff_n40C_5v50/chaos_engine__max_ff_n40C_5v50.lib
+      max_ss_125C_4v50:
+        - dir::../ip/chaos_engine/lib/max_ss_125C_4v50/chaos_engine__max_ss_125C_4v50.lib
+      max_tt_025C_5v00:
+        - dir::../ip/chaos_engine/lib/max_tt_025C_5v00/chaos_engine__max_tt_025C_5v00.lib
+      min_ff_n40C_5v50:
+        - dir::../ip/chaos_engine/lib/min_ff_n40C_5v50/chaos_engine__min_ff_n40C_5v50.lib
+      min_ss_125C_4v50:
+        - dir::../ip/chaos_engine/lib/min_ss_125C_4v50/chaos_engine__min_ss_125C_4v50.lib
+      min_tt_025C_5v00:
+        - dir::../ip/chaos_engine/lib/min_tt_025C_5v00/chaos_engine__min_tt_025C_5v00.lib
+      nom_ff_n40C_5v50:
+        - dir::../ip/chaos_engine/lib/nom_ff_n40C_5v50/chaos_engine__nom_ff_n40C_5v50.lib
+      nom_ss_125C_4v50:
+        - dir::../ip/chaos_engine/lib/nom_ss_125C_4v50/chaos_engine__nom_ss_125C_4v50.lib
+      nom_tt_025C_5v00:
+        - dir::../ip/chaos_engine/lib/nom_tt_025C_5v00/chaos_engine__nom_tt_025C_5v00.lib
+    instances:
+      i_chip_core.u_spine.u_chaos:
+        location: [1680, 480]
+        orientation: N
+  neural_osc:
+    gds:
+      - dir::../ip/neural_osc/gds/neural_osc.gds
+    lef:
+      - dir::../ip/neural_osc/lef/neural_osc.lef
+    vh:
+      - dir::../ip/neural_osc/vh/neural_osc.vh
+    lib:
+      max_ff_n40C_5v50:
+        - dir::../ip/neural_osc/lib/max_ff_n40C_5v50/neural_osc__max_ff_n40C_5v50.lib
+      max_ss_125C_4v50:
+        - dir::../ip/neural_osc/lib/max_ss_125C_4v50/neural_osc__max_ss_125C_4v50.lib
+      max_tt_025C_5v00:
+        - dir::../ip/neural_osc/lib/max_tt_025C_5v00/neural_osc__max_tt_025C_5v00.lib
+      min_ff_n40C_5v50:
+        - dir::../ip/neural_osc/lib/min_ff_n40C_5v50/neural_osc__min_ff_n40C_5v50.lib
+      min_ss_125C_4v50:
+        - dir::../ip/neural_osc/lib/min_ss_125C_4v50/neural_osc__min_ss_125C_4v50.lib
+      min_tt_025C_5v00:
+        - dir::../ip/neural_osc/lib/min_tt_025C_5v00/neural_osc__min_tt_025C_5v00.lib
+      nom_ff_n40C_5v50:
+        - dir::../ip/neural_osc/lib/nom_ff_n40C_5v50/neural_osc__nom_ff_n40C_5v50.lib
+      nom_ss_125C_4v50:
+        - dir::../ip/neural_osc/lib/nom_ss_125C_4v50/neural_osc__nom_ss_125C_4v50.lib
+      nom_tt_025C_5v00:
+        - dir::../ip/neural_osc/lib/nom_tt_025C_5v00/neural_osc__nom_tt_025C_5v00.lib
+    instances:
+      i_chip_core.u_spine.u_neural:
+        location: [2560, 480]
+        orientation: N
+  sid_engine:
+    gds:
+      - dir::../ip/sid_engine/gds/sid_engine.gds
+    lef:
+      - dir::../ip/sid_engine/lef/sid_engine.lef
+    vh:
+      - dir::../ip/sid_engine/vh/sid_engine.vh
+    lib:
+      max_ff_n40C_5v50:
+        - dir::../ip/sid_engine/lib/max_ff_n40C_5v50/sid_engine__max_ff_n40C_5v50.lib
+      max_ss_125C_4v50:
+        - dir::../ip/sid_engine/lib/max_ss_125C_4v50/sid_engine__max_ss_125C_4v50.lib
+      max_tt_025C_5v00:
+        - dir::../ip/sid_engine/lib/max_tt_025C_5v00/sid_engine__max_tt_025C_5v00.lib
+      min_ff_n40C_5v50:
+        - dir::../ip/sid_engine/lib/min_ff_n40C_5v50/sid_engine__min_ff_n40C_5v50.lib
+      min_ss_125C_4v50:
+        - dir::../ip/sid_engine/lib/min_ss_125C_4v50/sid_engine__min_ss_125C_4v50.lib
+      min_tt_025C_5v00:
+        - dir::../ip/sid_engine/lib/min_tt_025C_5v00/sid_engine__min_tt_025C_5v00.lib
+      nom_ff_n40C_5v50:
+        - dir::../ip/sid_engine/lib/nom_ff_n40C_5v50/sid_engine__nom_ff_n40C_5v50.lib
+      nom_ss_125C_4v50:
+        - dir::../ip/sid_engine/lib/nom_ss_125C_4v50/sid_engine__nom_ss_125C_4v50.lib
+      nom_tt_025C_5v00:
+        - dir::../ip/sid_engine/lib/nom_tt_025C_5v00/sid_engine__nom_tt_025C_5v00.lib
+    instances:
+      i_chip_core.u_spine.u_sid:
+        location: [1680, 1420]
+        orientation: N
+  bytebeat:
+    gds:
+      - dir::../ip/bytebeat/gds/bytebeat.gds
+    lef:
+      - dir::../ip/bytebeat/lef/bytebeat.lef
+    vh:
+      - dir::../ip/bytebeat/vh/bytebeat.vh
+    lib:
+      max_ff_n40C_5v50:
+        - dir::../ip/bytebeat/lib/max_ff_n40C_5v50/bytebeat__max_ff_n40C_5v50.lib
+      max_ss_125C_4v50:
+        - dir::../ip/bytebeat/lib/max_ss_125C_4v50/bytebeat__max_ss_125C_4v50.lib
+      max_tt_025C_5v00:
+        - dir::../ip/bytebeat/lib/max_tt_025C_5v00/bytebeat__max_tt_025C_5v00.lib
+      min_ff_n40C_5v50:
+        - dir::../ip/bytebeat/lib/min_ff_n40C_5v50/bytebeat__min_ff_n40C_5v50.lib
+      min_ss_125C_4v50:
+        - dir::../ip/bytebeat/lib/min_ss_125C_4v50/bytebeat__min_ss_125C_4v50.lib
+      min_tt_025C_5v00:
+        - dir::../ip/bytebeat/lib/min_tt_025C_5v00/bytebeat__min_tt_025C_5v00.lib
+      nom_ff_n40C_5v50:
+        - dir::../ip/bytebeat/lib/nom_ff_n40C_5v50/bytebeat__nom_ff_n40C_5v50.lib
+      nom_ss_125C_4v50:
+        - dir::../ip/bytebeat/lib/nom_ss_125C_4v50/bytebeat__nom_ss_125C_4v50.lib
+      nom_tt_025C_5v00:
+        - dir::../ip/bytebeat/lib/nom_tt_025C_5v00/bytebeat__nom_tt_025C_5v00.lib
+    instances:
+      i_chip_core.u_spine.u_bb:
+        location: [2100, 1420]
+        orientation: N

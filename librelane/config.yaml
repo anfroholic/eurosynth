@@ -76,7 +76,13 @@ CLOCK_PORT: clk_PAD
 CLOCK_NET: clk_pad/Y
 CLOCK_PERIOD: 40 # 25 MHz
 
-# Overfix hold violations
+# Overfix hold violations (for the INTERNAL reg->reg glue; these are the proven
+# roster-v1 values). NOTE: the fast-corner hold violations seen in signoff were NOT
+# reg-to-reg and are NOT fixed by this margin -- raising it to 0.5/0.45 actually made
+# them WORSE (jostled routing on pinned-arrival input paths). They are async control
+# inputs (pitch/pluck/voice, directly pad-strapped, no synchronizer) and are handled
+# correctly by a hold false_path in chip_top.sdc, not here. Keep the modest internal
+# margin.
 PL_RESIZER_HOLD_SLACK_MARGIN: 0.35
 GRT_RESIZER_HOLD_SLACK_MARGIN: 0.3
 
@@ -96,6 +102,48 @@ GRT_ALLOW_CONGESTION: true
 # realistic loads (to GRT_DESIGN_REPAIR_MAX_SLEW_PCT/CAP_PCT = 10%). This targets
 # the real mechanism instead of brute-forcing placement.
 RUN_POST_GRT_DESIGN_REPAIR: true
+
+# TOP-LEVEL DRV CLOSURE (ported from the engine recipe -- see librelane/blocks/*/config.yaml
+# and memory eurosynth-block-drv-closure). Every engine closed slew/cap to 0 with these
+# knobs; the chip inherited RUN_POST_GRT_DESIGN_REPAIR but not the tightened margins, so
+# the first assembly left 274 max-slew + 163 max-cap violations at max_ss on the
+# top-level GLUE nets -- chiefly the config-broadcast nets (one config reg fans the same
+# bit into all 5 engine macros across the ~3 mm die = very long, high-fanout wires) and
+# the now-false-pathed reset net (chip-wide fanout, no longer timing-buffered).
+#
+# Over-repair slew/cap so headroom survives the GRT-estimate -> detailed-route parasitic
+# bump. Convergence zone 20->33 OK, >=36 diverges (repair_design_postgrt thrashes for
+# hours) -- established on neural_osc/ks. Keep 33/28.
+DESIGN_REPAIR_MAX_SLEW_PCT: 33
+GRT_DESIGN_REPAIR_MAX_SLEW_PCT: 33
+DESIGN_REPAIR_MAX_CAP_PCT: 28
+
+# Force buffer insertion on very long top-level nets (the cross-die config broadcasts and
+# reset). 300 um is the WL sweet spot proven on ks (cut slew 45->22); 200 over-buffers
+# into congestion. The chip is congestion-sensitive (density 50 + GRT_ALLOW_CONGESTION),
+# so stay at 300.
+DESIGN_REPAIR_MAX_WIRE_LENGTH: 300
+GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH: 300
+
+# Keep the resizer's weak/slow DELAY cells out of repair (their edges blow ss max-slew).
+EXTRA_EXCLUDED_CELLS:
+  - gf180mcu_fd_sc_mcu7t5v0__dly*
+
+# Clock-tree DRV closure (proven on every engine): bound the leaf clusters so no clock
+# buffer exceeds the fanout/cap limits, and give CTS explicit slew+cap ceilings. Without
+# CTS_SINK_CLUSTERING_SIZE the default ~20 sinks/leaf blew clock fanout/cap.
+#
+# TIGHTENED for the chip: the first clean 9-corner signoff left 24 ss-only max-slew
+# violations, ALL on the clock tree (root clkbuf_1_x_clk_PAD2CORE at 6.3/5.5 ns driving
+# the clock across the ~3 mm die, plus clkbuf_leaf_* and macro /clk pins ~0.5 ns over the
+# 3.0 ns limit at the slowest corner). Datapath DESIGN_REPAIR_* cannot touch clock nets,
+# so this is a CTS lever: tighter slew/cap ceilings make CTS build a tree with more
+# margin that survives the ss degradation (split the root into more, shorter-driving
+# buffers). Watch hold -- margin is only +0.155 ns, so a big skew shift could regress it.
+CTS_SINK_CLUSTERING_SIZE: 8
+CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
+CTS_MAX_SLEW: 0.08
+CTS_MAX_CAP: 0.10
 
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200

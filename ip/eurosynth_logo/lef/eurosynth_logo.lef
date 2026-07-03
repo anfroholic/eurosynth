@@ -1,0 +1,23 @@
+VERSION 5.7 ;
+  NOWIREEXTENSIONATPIN ON ;
+  DIVIDERCHAR "/" ;
+  BUSBITCHARS "[]" ;
+MACRO eurosynth_logo
+  CLASS BLOCK ;
+  FOREIGN eurosynth_logo ;
+  ORIGIN 0.000 0.000 ;
+  SIZE 1058.40 BY 362.40 ;
+  OBS
+      LAYER Metal1 ;
+        RECT 0.0 0.0 1058.40 362.40 ;
+      LAYER Metal2 ;
+        RECT 0.0 0.0 1058.40 362.40 ;
+      LAYER Metal3 ;
+        RECT 0.0 0.0 1058.40 362.40 ;
+      LAYER Metal4 ;
+        RECT 0.0 0.0 1058.40 362.40 ;
+      LAYER Metal5 ;
+        RECT 0.0 0.0 1058.40 362.40 ;
+  END
+END eurosynth_logo
+END LIBRARY

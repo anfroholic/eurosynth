@@ -4,11 +4,12 @@ PDK_ROOT ?= $(MAKEFILE_DIR)/../../gf180mcu
 PDK ?= gf180mcuD
 
 # --- art tunables (override on the command line, e.g. `make art SCREEN=8`) ---
-IMG        ?= image/ws_evzr.png
-CELL       ?= eurosynth_art
+# Top-middle box of locations.png: aspect ~2.81, ~862 x 307 um on the die.
+IMG        ?= image/notes.png
+CELL       ?= eurosynth_notes
 PIXEL_SIZE ?= 0.60
-WIDTH      ?= 800
-HEIGHT     ?= 800
+WIDTH      ?= 1436
+HEIGHT     ?= 511
 # Halftone: 'control' = colour picks style per region (Halftone Studio v1.1:
 # grey=clustered dots, red=Xmesh, orange=brick, yellow=45, green=mesh, cyan=135,
 # blue=hlines, violet=weave, magenta=vlines). Matches the /studio preview.

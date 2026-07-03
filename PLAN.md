@@ -6,17 +6,25 @@ Read [NOTES.md](NOTES.md) first for *why* the design looks the way it does; this
 file is *how* we build the next piece without a human in the loop.
 
 > ### 📌 Live status & key changes (read before resuming)
-> - **Target slot is `1x0p5`** (half slot), NOT 1x1. Pad budget 4 in / 46 bidir /
->   4 analog; category split is soft (bidir pads are direction-configurable), only
->   the ~54-pad total is hard. All build commands use `SLOT=1x0p5`. See
->   [docs/template_integration.md](docs/template_integration.md).
-> - **[PROGRESS.md](PROGRESS.md) is the live source of truth** for what's done and
->   the (reordered) execution sequence. As of last update: Phase 0 + the
->   Karplus-Strong engine (spec, model, RTL, golden TB — **bit-exact, 0
->   mismatches**) are DONE and pushed. Next: wire KS into the spine + the 1x0p5
->   `chip_core` pin map (Phase 3), then template import (Phase 1).
-> - **Verification rail:** standalone Icarus only (no PDK). Full `chip_top` cocotb
->   + `make librelane` GDSII = human PDK session.
+> - **✅ FULL CHIP HARDENED & SIGNED OFF (2026-07-03).** All 5 engines (neural_osc,
+>   chaos, ks, sid, bytebeat) are hardened as reusable MACROS in `ip/<engine>/`, and
+>   `chip_top` assembles them hierarchically and passes a **fully-green 9-corner
+>   signoff**: setup, hold, max-slew, DRC, LVS, antenna ALL 0 (only benign I/O-pad
+>   max-cap warnings remain). Deliverable GDS: **`final_chip/gds/chip_top.gds.gz`**.
+>   Full write-up + iteration log: **[docs/chip_signoff_report.md](docs/chip_signoff_report.md)**.
+>   This section supersedes the KS-only / "GDSII is a non-goal" framing below —
+>   that plan was completed and then far exceeded; §5–§12 are kept as history.
+> - **Target slot is `1x0p5`** (half slot), NOT 1x1. All build commands use
+>   `SLOT=1x0p5`. See [docs/template_integration.md](docs/template_integration.md).
+> - **How the chip is actually built now:** hierarchical macro assembly, NOT a flat
+>   run. Each engine hardens standalone via `librelane/blocks/<engine>/config.yaml`
+>   (Classic flow, shared `librelane/blocks/engine.sdc` multicycle) → views to
+>   `ip/<engine>/`. The chip flow (`scripts/harden.sh`, Chip flow) pulls them in as
+>   MACROS from `librelane/macros/macros_5v.yaml` and adds only the glue
+>   (chip_top/chip_core/synth_spine/spi_config). Key SDC: `librelane/chip_top.sdc`
+>   (reset + async-control-input false_paths, reg→reg multicycle). See the report.
+> - **Verification rail:** standalone Icarus (no PDK) for RTL; the GDSII flow (once a
+>   "human PDK session") is now the automated Docker `eurosynth-harden` container.
 
 ---
 
@@ -368,6 +376,20 @@ continues even if a turn ends. PROGRESS.md is the single source of truth for
 
 ## 12. Blockers / open questions (append-only; the run writes here)
 
+- **2026-07-03 — FULL 5-ENGINE CHIP CLOSED (fully-green 9-corner signoff).** Far
+  beyond the original KS-only overnight scope. All 5 engines hardened as macros
+  (`ip/<engine>/`); `chip_top` assembled hierarchically and closed setup/hold/slew/
+  DRC/LVS/antenna = 0 across all 9 corners (`RUN_2026-07-03_01-07-23`). Deliverable:
+  `final_chip/gds/chip_top.gds.gz` (+ render + STA summary). Report:
+  [docs/chip_signoff_report.md](docs/chip_signoff_report.md). Key learnings (also in
+  agent memory `eurosynth-chip-assembly`): (1) LibreLane does NOT deep-merge the
+  `MACROS` dict across files — engines+markers must share one file; (2) the −39 ns
+  setup was the reset path → `set_false_path` on reset + engine-contract multicycle;
+  (3) fast-corner hold was the async pad-strapped control inputs (pitch/pluck/voice,
+  no synchronizer) → `set_false_path` on them (a hold-margin bump made it WORSE);
+  (4) ss clock-tree max-slew → `CTS_CLK_MAX_WIRE_LENGTH: 300` (root was already the
+  strongest buffer; the net was just unbounded-length). CoB precheck on the final
+  GDS in progress (§ same recipe as roster; slot 1x0p5, `--cob`, `--workers 6`).
 - **2026-06-16 — GDSII hardening (§9) GREENLIT mid-run** and being attempted
   autonomously (was a non-goal). See PROGRESS.md Phase 5.
 - **2026-06-16 — hardening env recon (NOT a blocker; resolved by pivot).**

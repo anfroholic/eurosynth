@@ -145,6 +145,17 @@ CTS_SINK_CLUSTERING_MAX_DIAMETER: 30
 CTS_MAX_SLEW: 0.08
 CTS_MAX_CAP: 0.10
 
+# THE root-clock-slew lever. After tightening MAX_SLEW/CAP above, the marginal leaf
+# clock buffers improved (nom_ss 21->14, min_ss 12->2) but the 2 ROOT distribution
+# buffers were UNCHANGED at ~6.5/5.3 ns -- and CTS_ROOT_BUFFER is already clkbuf_16,
+# the STRONGEST clock cell. So it is not drive strength: those clkbuf_1_x_clk_PAD2CORE
+# buffers drive the clock from the pad across the die on an UNBOUNDED-length net
+# (CTS_CLK_MAX_WIRE_LENGTH defaulted to 0 = no limit). Bounding it forces CTS to split
+# the long root nets with intermediate buffers so no single clkbuf_16 drives a span long
+# enough to slew out. 300 um matches the datapath DESIGN_REPAIR_MAX_WIRE_LENGTH sweet
+# spot. Watch hold (+0.34 ns margin) in case the extra clock buffering shifts skew.
+CTS_CLK_MAX_WIRE_LENGTH: 300
+
 # Allow a larger Y displacement
 PL_MAX_DISPLACEMENT_Y: 200
 

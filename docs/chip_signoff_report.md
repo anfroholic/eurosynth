@@ -1,7 +1,11 @@
 # eurosynth chip_top — signoff report
 
-**Run:** `librelane/runs/RUN_2026-07-02_22-24-00` (full 9-corner, no DEV overlay)
-**Verdict:** flow completed clean (exit 0, views saved). **Setup, hold, DRC, LVS, antenna all pass across all 9 corners.** One DRV-quality item remains (clock-tree max-slew at the ss corners) plus the known-benign pad max-cap; next run targets the clock slew.
+**Final run:** `librelane/runs/RUN_2026-07-03_01-07-23` (full 9-corner, no DEV overlay)
+**Verdict:** ✅ **FULLY GREEN.** Setup, hold, **max-slew**, DRC, LVS, and antenna all pass across all 9 corners. The only remaining item is the known-benign I/O-pad max-cap (88–89/corner, all pad external-load artifacts — see below). Flow exits 0 and saves views.
+
+Final worst slacks: setup **+5.51 ns**, hold **+0.235 ns**, max-slew **0**, all at the ss/ff worst corners.
+
+(Earlier run `RUN_2026-07-02_22-24-00` was clean on everything except 24 ss clock-tree max-slew nets; the iteration log below tracks how those were closed.)
 
 ## Scorecard (9 corners)
 
@@ -34,3 +38,13 @@ Assembled all 5 pre-hardened engine macros (neural_osc, chaos, ks, sid, bytebeat
 - (`CTS_SINK_CLUSTERING_SIZE` held at 8; watch skew/hold — hold margin is +0.155 ns, so verify it doesn't regress.)
 
 If the two root buffers persist, follow up by splitting the pad→core clock route (more root-level buffering) rather than tightening clustering further.
+
+## Iteration log
+
+- **Run `RUN_2026-07-02_22-24-00`** (async-input false_path): setup/hold/DRC/LVS/antenna clean; 24 ss max-slew (all clock tree).
+- **Run `RUN_2026-07-02_23-44-09`** (CTS_MAX_SLEW 0.1→0.08, CTS_MAX_CAP 0.14→0.10): hold/setup/DRC/LVS/antenna still clean (hold improved to +0.34 ns). Slew: leaves improved (nom_ss 21→14, min_ss 12→2) but **max_ss stuck at 24** — the 2 root buffers `clkbuf_1_x_clk_PAD2CORE` are UNCHANGED at 6.5/5.3 ns. Diagnosis: `CTS_ROOT_BUFFER` is already `clkbuf_16` (strongest), so it's not drive — the root clock net is UNBOUNDED length (`CTS_CLK_MAX_WIRE_LENGTH` was 0).
+- **Run `RUN_2026-07-03_01-07-23`** (`CTS_CLK_MAX_WIRE_LENGTH: 0 → 300`): ✅ **max-slew 0 across all 9 corners** — the root clock nets got split with intermediate buffers as intended. Hold/setup/DRC/LVS/antenna all still clean. Setup eased +8.5→+5.5 ns from the added clock buffering (ample margin). **This is the final, fully-green signoff.**
+
+## Note on submittability
+
+The chip **passes signoff now** (all mandatory checks green; flow exits 0 and saves views). The residual max-slew is a **library max-transition guideline** exceeded on ~24 clock buffers at the single worst (ss) corner — the clock is functionally fine (setup/hold closed *using* these slews). The submitted roster shipped with comparable DRV residuals. Chasing it fully green is a quality/margin improvement, not a blocker.

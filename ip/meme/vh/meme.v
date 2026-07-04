@@ -1,0 +1,3 @@
+(* blackbox *)
+module meme;
+endmodule

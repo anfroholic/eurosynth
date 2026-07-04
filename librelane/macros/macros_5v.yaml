@@ -63,219 +63,25 @@ MACROS:
         location: ["expr::($DIE_AREA[2] - (245 + 36))", "expr::($DIE_AREA[3] - (245 + 36))"]
         orientation: N
 
-  gf180mcu_ws_ip__logo:
+  # ---- the doge (meme branch) ----
+  # One obstruction-only metal-halftone macro (ip/meme) filling the core.
+  # MUST share this MACROS dict with the markers above: LibreLane does not
+  # deep-merge MACROS across files.
+  # Core is [442,442,3490,2089]; macro is 2790x1500 centered horizontally
+  # (74 um side margins), 90 um stdcell band below for the wow counter,
+  # 57 um clear above. Verified no marker overlap (marker sits in the pad
+  # margin at the top-right die corner).
+  meme:
     gds:
-      - dir::../ip/gf180mcu_ws_ip__logo/gds/gf180mcu_ws_ip__logo.gds
+      - dir::../ip/meme/gds/meme.gds
     lef:
-      - dir::../ip/gf180mcu_ws_ip__logo/lef/gf180mcu_ws_ip__logo.lef
+      - dir::../ip/meme/lef/meme.lef
     vh:
-      - dir::../ip/gf180mcu_ws_ip__logo/vh/gf180mcu_ws_ip__logo.v
+      - dir::../ip/meme/vh/meme.v
     lib:
       "*":
-        - dir::../ip/gf180mcu_ws_ip__logo/lib/gf180mcu_ws_ip__logo.lib
+        - dir::../ip/meme/lib/meme.lib
     instances:
-      wafer_space_logo:
-        location: [26, "expr::$DIE_AREA[3] - 169.25"]
-        orientation: N
-
-  # ---- eurosynth ENGINE macros (hierarchical assembly) ----
-  # Hardened standalone in librelane/blocks/<engine>/, views in ip/<engine>/.
-  # MUST live in the SAME MACROS dict as the markers above: LibreLane does not
-  # deep-merge MACROS across files (a separate file would override the markers).
-  ks_engine:
-    gds:
-      - dir::../ip/ks_engine/gds/ks_engine.gds
-    lef:
-      - dir::../ip/ks_engine/lef/ks_engine.lef
-    vh:
-      - dir::../ip/ks_engine/vh/ks_engine.vh
-    lib:
-      max_ff_n40C_5v50:
-        - dir::../ip/ks_engine/lib/max_ff_n40C_5v50/ks_engine__max_ff_n40C_5v50.lib
-      max_ss_125C_4v50:
-        - dir::../ip/ks_engine/lib/max_ss_125C_4v50/ks_engine__max_ss_125C_4v50.lib
-      max_tt_025C_5v00:
-        - dir::../ip/ks_engine/lib/max_tt_025C_5v00/ks_engine__max_tt_025C_5v00.lib
-      min_ff_n40C_5v50:
-        - dir::../ip/ks_engine/lib/min_ff_n40C_5v50/ks_engine__min_ff_n40C_5v50.lib
-      min_ss_125C_4v50:
-        - dir::../ip/ks_engine/lib/min_ss_125C_4v50/ks_engine__min_ss_125C_4v50.lib
-      min_tt_025C_5v00:
-        - dir::../ip/ks_engine/lib/min_tt_025C_5v00/ks_engine__min_tt_025C_5v00.lib
-      nom_ff_n40C_5v50:
-        - dir::../ip/ks_engine/lib/nom_ff_n40C_5v50/ks_engine__nom_ff_n40C_5v50.lib
-      nom_ss_125C_4v50:
-        - dir::../ip/ks_engine/lib/nom_ss_125C_4v50/ks_engine__nom_ss_125C_4v50.lib
-      nom_tt_025C_5v00:
-        - dir::../ip/ks_engine/lib/nom_tt_025C_5v00/ks_engine__nom_tt_025C_5v00.lib
-    instances:
-      i_chip_core.u_spine.u_ks:
-        location: [480, 480]
-        orientation: N
-  chaos_engine:
-    gds:
-      - dir::../ip/chaos_engine/gds/chaos_engine.gds
-    lef:
-      - dir::../ip/chaos_engine/lef/chaos_engine.lef
-    vh:
-      - dir::../ip/chaos_engine/vh/chaos_engine.vh
-    lib:
-      max_ff_n40C_5v50:
-        - dir::../ip/chaos_engine/lib/max_ff_n40C_5v50/chaos_engine__max_ff_n40C_5v50.lib
-      max_ss_125C_4v50:
-        - dir::../ip/chaos_engine/lib/max_ss_125C_4v50/chaos_engine__max_ss_125C_4v50.lib
-      max_tt_025C_5v00:
-        - dir::../ip/chaos_engine/lib/max_tt_025C_5v00/chaos_engine__max_tt_025C_5v00.lib
-      min_ff_n40C_5v50:
-        - dir::../ip/chaos_engine/lib/min_ff_n40C_5v50/chaos_engine__min_ff_n40C_5v50.lib
-      min_ss_125C_4v50:
-        - dir::../ip/chaos_engine/lib/min_ss_125C_4v50/chaos_engine__min_ss_125C_4v50.lib
-      min_tt_025C_5v00:
-        - dir::../ip/chaos_engine/lib/min_tt_025C_5v00/chaos_engine__min_tt_025C_5v00.lib
-      nom_ff_n40C_5v50:
-        - dir::../ip/chaos_engine/lib/nom_ff_n40C_5v50/chaos_engine__nom_ff_n40C_5v50.lib
-      nom_ss_125C_4v50:
-        - dir::../ip/chaos_engine/lib/nom_ss_125C_4v50/chaos_engine__nom_ss_125C_4v50.lib
-      nom_tt_025C_5v00:
-        - dir::../ip/chaos_engine/lib/nom_tt_025C_5v00/chaos_engine__nom_tt_025C_5v00.lib
-    instances:
-      i_chip_core.u_spine.u_chaos:
-        location: [1680, 480]
-        orientation: N
-  neural_osc:
-    gds:
-      - dir::../ip/neural_osc/gds/neural_osc.gds
-    lef:
-      - dir::../ip/neural_osc/lef/neural_osc.lef
-    vh:
-      - dir::../ip/neural_osc/vh/neural_osc.vh
-    lib:
-      max_ff_n40C_5v50:
-        - dir::../ip/neural_osc/lib/max_ff_n40C_5v50/neural_osc__max_ff_n40C_5v50.lib
-      max_ss_125C_4v50:
-        - dir::../ip/neural_osc/lib/max_ss_125C_4v50/neural_osc__max_ss_125C_4v50.lib
-      max_tt_025C_5v00:
-        - dir::../ip/neural_osc/lib/max_tt_025C_5v00/neural_osc__max_tt_025C_5v00.lib
-      min_ff_n40C_5v50:
-        - dir::../ip/neural_osc/lib/min_ff_n40C_5v50/neural_osc__min_ff_n40C_5v50.lib
-      min_ss_125C_4v50:
-        - dir::../ip/neural_osc/lib/min_ss_125C_4v50/neural_osc__min_ss_125C_4v50.lib
-      min_tt_025C_5v00:
-        - dir::../ip/neural_osc/lib/min_tt_025C_5v00/neural_osc__min_tt_025C_5v00.lib
-      nom_ff_n40C_5v50:
-        - dir::../ip/neural_osc/lib/nom_ff_n40C_5v50/neural_osc__nom_ff_n40C_5v50.lib
-      nom_ss_125C_4v50:
-        - dir::../ip/neural_osc/lib/nom_ss_125C_4v50/neural_osc__nom_ss_125C_4v50.lib
-      nom_tt_025C_5v00:
-        - dir::../ip/neural_osc/lib/nom_tt_025C_5v00/neural_osc__nom_tt_025C_5v00.lib
-    instances:
-      i_chip_core.u_spine.u_neural:
-        location: [2560, 480]
-        orientation: N
-  sid_engine:
-    gds:
-      - dir::../ip/sid_engine/gds/sid_engine.gds
-    lef:
-      - dir::../ip/sid_engine/lef/sid_engine.lef
-    vh:
-      - dir::../ip/sid_engine/vh/sid_engine.vh
-    lib:
-      max_ff_n40C_5v50:
-        - dir::../ip/sid_engine/lib/max_ff_n40C_5v50/sid_engine__max_ff_n40C_5v50.lib
-      max_ss_125C_4v50:
-        - dir::../ip/sid_engine/lib/max_ss_125C_4v50/sid_engine__max_ss_125C_4v50.lib
-      max_tt_025C_5v00:
-        - dir::../ip/sid_engine/lib/max_tt_025C_5v00/sid_engine__max_tt_025C_5v00.lib
-      min_ff_n40C_5v50:
-        - dir::../ip/sid_engine/lib/min_ff_n40C_5v50/sid_engine__min_ff_n40C_5v50.lib
-      min_ss_125C_4v50:
-        - dir::../ip/sid_engine/lib/min_ss_125C_4v50/sid_engine__min_ss_125C_4v50.lib
-      min_tt_025C_5v00:
-        - dir::../ip/sid_engine/lib/min_tt_025C_5v00/sid_engine__min_tt_025C_5v00.lib
-      nom_ff_n40C_5v50:
-        - dir::../ip/sid_engine/lib/nom_ff_n40C_5v50/sid_engine__nom_ff_n40C_5v50.lib
-      nom_ss_125C_4v50:
-        - dir::../ip/sid_engine/lib/nom_ss_125C_4v50/sid_engine__nom_ss_125C_4v50.lib
-      nom_tt_025C_5v00:
-        - dir::../ip/sid_engine/lib/nom_tt_025C_5v00/sid_engine__nom_tt_025C_5v00.lib
-    instances:
-      i_chip_core.u_spine.u_sid:
-        location: [1680, 1420]
-        orientation: N
-  bytebeat:
-    gds:
-      - dir::../ip/bytebeat/gds/bytebeat.gds
-    lef:
-      - dir::../ip/bytebeat/lef/bytebeat.lef
-    vh:
-      - dir::../ip/bytebeat/vh/bytebeat.vh
-    lib:
-      max_ff_n40C_5v50:
-        - dir::../ip/bytebeat/lib/max_ff_n40C_5v50/bytebeat__max_ff_n40C_5v50.lib
-      max_ss_125C_4v50:
-        - dir::../ip/bytebeat/lib/max_ss_125C_4v50/bytebeat__max_ss_125C_4v50.lib
-      max_tt_025C_5v00:
-        - dir::../ip/bytebeat/lib/max_tt_025C_5v00/bytebeat__max_tt_025C_5v00.lib
-      min_ff_n40C_5v50:
-        - dir::../ip/bytebeat/lib/min_ff_n40C_5v50/bytebeat__min_ff_n40C_5v50.lib
-      min_ss_125C_4v50:
-        - dir::../ip/bytebeat/lib/min_ss_125C_4v50/bytebeat__min_ss_125C_4v50.lib
-      min_tt_025C_5v00:
-        - dir::../ip/bytebeat/lib/min_tt_025C_5v00/bytebeat__min_tt_025C_5v00.lib
-      nom_ff_n40C_5v50:
-        - dir::../ip/bytebeat/lib/nom_ff_n40C_5v50/bytebeat__nom_ff_n40C_5v50.lib
-      nom_ss_125C_4v50:
-        - dir::../ip/bytebeat/lib/nom_ss_125C_4v50/bytebeat__nom_ss_125C_4v50.lib
-      nom_tt_025C_5v00:
-        - dir::../ip/bytebeat/lib/nom_tt_025C_5v00/bytebeat__nom_tt_025C_5v00.lib
-    instances:
-      i_chip_core.u_spine.u_bb:
-        location: [2100, 1420]
-        orientation: N
-
-  # ---- eurosynth ART macros (metal-halftone, obstruction-only, no pins) ----
-  # Top band above the engines, per ip/eurosynth_art/image/locations.png. Each is
-  # DRC-clean in isolation (7 benign). MUST share this MACROS dict (no deep-merge).
-  # Placements verified inside CORE [442,442,3490,2089], no engine/marker overlap.
-  eurosynth_logo:
-    gds:
-      - dir::../ip/eurosynth_logo/gds/eurosynth_logo.gds
-    lef:
-      - dir::../ip/eurosynth_logo/lef/eurosynth_logo.lef
-    vh:
-      - dir::../ip/eurosynth_logo/vh/eurosynth_logo.v
-    lib:
-      "*":
-        - dir::../ip/eurosynth_logo/lib/eurosynth_logo.lib
-    instances:
-      eurosynth_logo_i:
-        location: [578, 1700]
-        orientation: N
-  eurosynth_notes:
-    gds:
-      - dir::../ip/eurosynth_notes/gds/eurosynth_notes.gds
-    lef:
-      - dir::../ip/eurosynth_notes/lef/eurosynth_notes.lef
-    vh:
-      - dir::../ip/eurosynth_notes/vh/eurosynth_notes.v
-    lib:
-      "*":
-        - dir::../ip/eurosynth_notes/lib/eurosynth_notes.lib
-    instances:
-      eurosynth_notes_i:
-        location: [1718, 1730]
-        orientation: N
-  eurosynth_art:
-    gds:
-      - dir::../ip/eurosynth_art/gds/eurosynth_art.gds
-    lef:
-      - dir::../ip/eurosynth_art/lef/eurosynth_art.lef
-    vh:
-      - dir::../ip/eurosynth_art/vh/eurosynth_art.v
-    lib:
-      "*":
-        - dir::../ip/eurosynth_art/lib/eurosynth_art.lib
-    instances:
-      eurosynth_art_i:
-        location: [2790, 1550]
+      meme_i:
+        location: [571, 532]
         orientation: N

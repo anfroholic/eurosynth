@@ -1,0 +1,23 @@
+VERSION 5.7 ;
+  NOWIREEXTENSIONATPIN ON ;
+  DIVIDERCHAR "/" ;
+  BUSBITCHARS "[]" ;
+MACRO meme
+  CLASS BLOCK ;
+  FOREIGN meme ;
+  ORIGIN 0.000 0.000 ;
+  SIZE 2790.00 BY 1500.00 ;
+  OBS
+      LAYER Metal1 ;
+        RECT 0.0 0.0 2790.00 1500.00 ;
+      LAYER Metal2 ;
+        RECT 0.0 0.0 2790.00 1500.00 ;
+      LAYER Metal3 ;
+        RECT 0.0 0.0 2790.00 1500.00 ;
+      LAYER Metal4 ;
+        RECT 0.0 0.0 2790.00 1500.00 ;
+      LAYER Metal5 ;
+        RECT 0.0 0.0 2790.00 1500.00 ;
+  END
+END meme
+END LIBRARY

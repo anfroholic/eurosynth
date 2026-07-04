@@ -267,14 +267,9 @@ module chip_top #(
     (* keep *) gf180mcu_ws_ip__project_id project_id ();
     (* keep *) gf180mcu_ws_ip__marker marker ();
     
-    // wafer.space logo - can be removed if desired
-    (* keep *) gf180mcu_ws_ip__logo wafer_space_logo ();
-
-    // eurosynth custom art (metal-halftone, obstruction-only, no pins/nets).
-    // Placed along the top band; see librelane/macros/macros_5v.yaml + locations.png.
-    (* keep *) eurosynth_logo  eurosynth_logo_i  ();
-    (* keep *) eurosynth_notes eurosynth_notes_i ();
-    (* keep *) eurosynth_art   eurosynth_art_i   ();
+    // the doge (metal-halftone art, obstruction-only, no pins/nets).
+    // Fills the whole core; see librelane/macros/macros_5v.yaml + ip/meme.
+    (* keep *) meme meme_i ();
 
 endmodule
 

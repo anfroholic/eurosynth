@@ -29,19 +29,11 @@ meta:
     #Checker.LVS: null
 
 DESIGN_NAME: chip_top
-# HIERARCHICAL assembly: the 5 engines are dropped in as pre-hardened MACROS
-# (librelane/macros/engines.yaml), NOT synthesized here. So VERILOG_FILES is just the
-# thin top-level GLUE: the padframe (chip_top), the core wrapper (chip_core), the
-# spine (voice mux + config distribution), and the SPI config block. Synthesis sees
-# each engine as a black box via its ip/<engine>/vh/<engine>.vh declaration.
-# BONUS: the old flat-flow caveat -- neural_osc's models/neural_weights.hex $readmemh
-# needing an absolute path at chip synthesis -- is GONE: neural_osc is now a macro with
-# the weights already baked into its GDS, so chip synthesis never elaborates it.
+# MEME chip: the core is one obstruction-only art macro (ip/meme, the doge)
+# plus the wow counter in chip_core. No engines, no spine, no SPI.
 VERILOG_FILES:
 - dir::../src/chip_top.sv
 - dir::../src/chip_core.sv
-- dir::../src/synth_spine.sv
-- dir::../src/spi_config.sv
 
 # Enable plugin for better SystemVerilog support
 # USE_SLANG: True
@@ -68,11 +60,8 @@ IGNORE_DISCONNECTED_MODULES:
 - gf180mcu_ws_ip__qrcode_id
 - gf180mcu_ws_ip__shuttle_id
 - gf180mcu_ws_ip__project_id
-- gf180mcu_ws_ip__logo
 - gf180mcu_ws_ip__marker
-- eurosynth_logo
-- eurosynth_notes
-- eurosynth_art
+- meme
 
 # Clock
 CLOCK_PORT: clk_PAD

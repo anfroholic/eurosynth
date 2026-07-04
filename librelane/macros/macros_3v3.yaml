@@ -232,3 +232,50 @@ MACROS:
       i_chip_core.u_spine.u_bb:
         location: [2100, 1420]
         orientation: N
+
+  # ---- eurosynth ART macros (metal-halftone, obstruction-only, no pins) ----
+  # Top band above the engines, per ip/eurosynth_art/image/locations.png. Each is
+  # DRC-clean in isolation (7 benign). MUST share this MACROS dict (no deep-merge).
+  # Placements verified inside CORE [442,442,3490,2089], no engine/marker overlap.
+  eurosynth_logo:
+    gds:
+      - dir::../ip/eurosynth_logo/gds/eurosynth_logo.gds
+    lef:
+      - dir::../ip/eurosynth_logo/lef/eurosynth_logo.lef
+    vh:
+      - dir::../ip/eurosynth_logo/vh/eurosynth_logo.v
+    lib:
+      "*":
+        - dir::../ip/eurosynth_logo/lib/eurosynth_logo.lib
+    instances:
+      eurosynth_logo_i:
+        location: [578, 1700]
+        orientation: N
+  eurosynth_notes:
+    gds:
+      - dir::../ip/eurosynth_notes/gds/eurosynth_notes.gds
+    lef:
+      - dir::../ip/eurosynth_notes/lef/eurosynth_notes.lef
+    vh:
+      - dir::../ip/eurosynth_notes/vh/eurosynth_notes.v
+    lib:
+      "*":
+        - dir::../ip/eurosynth_notes/lib/eurosynth_notes.lib
+    instances:
+      eurosynth_notes_i:
+        location: [1718, 1730]
+        orientation: N
+  eurosynth_art:
+    gds:
+      - dir::../ip/eurosynth_art/gds/eurosynth_art.gds
+    lef:
+      - dir::../ip/eurosynth_art/lef/eurosynth_art.lef
+    vh:
+      - dir::../ip/eurosynth_art/vh/eurosynth_art.v
+    lib:
+      "*":
+        - dir::../ip/eurosynth_art/lib/eurosynth_art.lib
+    instances:
+      eurosynth_art_i:
+        location: [2790, 1550]
+        orientation: N

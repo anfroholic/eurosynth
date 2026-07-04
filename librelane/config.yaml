@@ -70,6 +70,9 @@ IGNORE_DISCONNECTED_MODULES:
 - gf180mcu_ws_ip__project_id
 - gf180mcu_ws_ip__logo
 - gf180mcu_ws_ip__marker
+- eurosynth_logo
+- eurosynth_notes
+- eurosynth_art
 
 # Clock
 CLOCK_PORT: clk_PAD

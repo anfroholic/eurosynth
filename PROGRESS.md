@@ -361,6 +361,46 @@ paths from the MLP MAC / chaos multipliers). Resume run dir
     progress `tail -20 /root/harden_roster.log` + `ls -1dt /buildroster/librelane/runs/RUN_*/[0-9][0-9]-*/`.
     GDS when done: `/buildroster/final/gds/chip_top.gds` (extract with `docker cp`).
 
+## Phase G — custom metal art + final tapeout signoff (`main`)  ✅ COMPLETE — TAPEOUT-READY
+The signed-off roster chip got three custom metal-halftone art macros in the top band,
+then a full 9-corner signoff + CoB precheck on the art-integrated die. Method + recipe:
+memory [[eurosynth-art-macro]], [[eurosynth-precheck-cob]]; art docs `docs/chip_art.md`,
+renderer limits `docs/renderer_metal_limits.md`.
+- [x] Ga  **Three art macros built** (on-grid halftone, obstruction-only, no pins/nets),
+          one per top box of `ip/eurosynth_art/image/locations.png`: `eurosynth_logo`
+          (top-left, "EuroSynth" blackletter; `--solid-screen 20` line-fill clears MSLOT +
+          `--color-style dots` shadow), `eurosynth_notes` (top-middle, music staff),
+          `eurosynth_art` (top-right, wafer.space/evezor). Each **DRC-clean = 7 benign**
+          standalone (die-level density floors, cleared at integration by dummy fill).
+- [x] Gb  **Integrated into `chip_top`** — all 3 added to `macros_5v.yaml` + `macros_3v3.yaml`
+          (no deep-merge), `IGNORE_DISCONNECTED_MODULES`, and `(* keep *)` black boxes in
+          `src/chip_top.sv`. Placements verified inside CORE, zero overlap (top banner row).
+- [x] Gc  **Typo fix** — corrected "sonsored"→"sponsored" in `ws_evzr.png`, regenerated
+          `eurosynth_art` GDS (DRC-clean). Timeline mattered: an earlier complete signoff
+          (18:37) had the OLD typo art; the corrected art regenerated at 19:09.
+- [x] Gd  **Full 9-corner signoff — CLEAN** (`RUN_2026-07-04_01-17-01`, no DEV overlay;
+          survived a power outage that killed a first attempt mid magic-DRC → re-ran clean).
+          Magic DRC **0**, KLayout DRC **0**, LVS **0**, antenna **0**, **setup 0 vios**
+          (WNS **+3.85 ns**), **hold 0 vios** (WHS **+0.288 ns**), max-slew **0**, max-cap 89
+          (known-benign pad caps), util 84.3%, power 2.41 mW. Tapeout GDS
+          `final/gds/chip_top.gds` (136 MB, gitignored). NB setup now closes at 25 MHz
+          (WNS +3.85 ns) — the roster's −24.9 ns was pre-art; this build closes positive.
+- [x] Ge  **CoB precheck — PASS** (`gf180mcu-precheck` 1.7.0 `--cob`, `RUN_2026-07-04_04-20-59`).
+          Top cell ✅, slot 1x0p5 (3932×2531) ✅, **"Pad mask matches!"** ✅ (golden
+          `mask_1x0p5.gds`), metrics all zero: magic DRC 0 / klayout DRC 0 / density 0 /
+          antenna 0 / zero-area 0. `Precheck successfully completed` EXIT=0. `--workers 6`
+          (max OOMs on the 136 MB layout). Benign: ~110 KLayout GDS record-length warnings
+          on the high-poly art cells (not errors).
+- [x] Gf  **Tracked deliverable refreshed** — `final_chip/` updated from this signoff (the
+          old tracked copy was the pre-art 08:11 run): `gds/chip_top.gds.gz` (21.7 MB,
+          decompresses byte-identical to the precheck-passed GDS), `chip_top.png` (post-fill
+          precheck render = accurate), `reports/sta_summary.rpt` (3.85 ns WNS, this run).
+          README pic `docs/img/die_render.png` = pre-fill render (legible structure view).
+
+**Verdict:** `chip_top` with custom art is **tapeout / submission-ready** — full signoff clean
+(incl. setup closed at 25 MHz), CoB pad mask matches. Only remaining step is the external
+wafer.space shuttle submission (slot 1x0p5).
+
 ## Commit log (chunk → hash)
 - baseline → f861ae0 (main)
 - phase0/scaffold → 8ce8bfe

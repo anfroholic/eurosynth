@@ -47,4 +47,4 @@ img/
 # ...but DO track the committed showcase diagrams / die render
 !docs/img/
 !docs/img/**
-precheck-1.7.0/
+precheck-*/

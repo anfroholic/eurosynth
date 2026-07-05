@@ -7,6 +7,22 @@ work. See [PLAN.md](PLAN.md) for chunk definitions/resume and
 Legend: `[x]` done+verified · `[~]` in progress · `[ ]` not started · `[!]` blocked
 
 ---
+> ### ✅ 2026-07-05: wafer.space density-rule update (template 1.5.7 / precheck 1.7.1) — re-verified PASS
+> wafer.space announced the legacy-fork **density rules** had not been upstreamed to
+> Open PDKs; template 1.5.7 + precheck 1.7.1 bump the PDK to **`d658698b`** to fix it
+> (the platform auto-reruns the latest precheck on submitted designs).
+> - Template 1.5.7's LibreLane pin resolves to **`3.1.0.dev2`** — the exact image our
+>   compose flow already uses ⇒ **no re-harden needed**; verification-only update.
+> - `scripts/pdk.sh` PDK pin bumped `019cf7a3` → `d658698bd8bcf4e05fc7b5991a701247ba0d744c`;
+>   new PDK fetched into `./pdk`, old version deleted.
+> - **Precheck 1.7.1 `--cob` re-run on the signoff GDS (`final/gds/chip_top.gds`): PASS** —
+>   density 0 (under the NEW rules), magic DRC 0, klayout DRC 0, antenna 0, zero-area 0,
+>   "Pad mask matches!", `Precheck successfully completed` (run
+>   `precheck-1.7.1/run/runs/RUN_2026-07-05_20-01-35`, ~30 min).
+> - Precheck now runs via the **official `ghcr.io/wafer-space/gf180mcu-precheck` image**
+>   (new `scripts/precheck.sh`) — our harden image lacks the `qrcode`/`pillow` python
+>   deps its Generate-ID stage needs, and the official image is what the platform runs.
+---
 > ### 🚀 NEW DIRECTION (2026-06-17): full engine roster on branch `engines/kitchen-sink` — ✅ COMPLETE
 > The 256 GDSII deliverable shipped (clean signoff; see Phase 5e). The 1024 baseline
 > was **stopped** per human call. New work added the remaining roadmap engines —

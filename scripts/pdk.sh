@@ -7,7 +7,9 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 PDK=${PDK:-gf180mcuD}
-PDK_COMMIT=${PDK_COMMIT:-019cf7a3e0de79bb0e4b6213758882d283c65816}
+# d658698b = template 1.5.7 / precheck 1.7.1 pin: brings the density rules from
+# the legacy wafer.space PDK fork that had not yet been upstreamed to Open PDKs.
+PDK_COMMIT=${PDK_COMMIT:-d658698bd8bcf4e05fc7b5991a701247ba0d744c}
 
 export MSYS_NO_PATHCONV=1   # Windows/Git-Bash mount-path fix
 

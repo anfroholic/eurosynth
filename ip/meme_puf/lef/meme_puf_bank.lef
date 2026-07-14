@@ -6,7 +6,7 @@ MACRO meme_puf_bank
   CLASS BLOCK ;
   FOREIGN meme_puf_bank ;
   ORIGIN 0.000 0.000 ;
-  SIZE 12.650 BY 13.450 ;
+  SIZE 12.650 BY 11.250 ;
   PIN HI
     DIRECTION INOUT ;
     USE ANALOG ;
@@ -31,20 +31,12 @@ MACRO meme_puf_bank
         RECT 1.570 5.300 2.570 8.500 ;
     END
   END t2
-  PIN t3
-    DIRECTION INOUT ;
-    USE ANALOG ;
-    PORT
-      LAYER Metal1 ;
-        RECT 10.430 7.500 11.430 10.700 ;
-    END
-  END t3
   PIN LO
     DIRECTION INOUT ;
     USE ANALOG ;
     PORT
       LAYER Metal1 ;
-        RECT 1.570 9.700 2.570 10.700 ;
+        RECT 10.430 7.500 11.430 8.500 ;
     END
   END LO
 END meme_puf_bank

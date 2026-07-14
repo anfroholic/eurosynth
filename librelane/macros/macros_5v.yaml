@@ -103,5 +103,26 @@ MACROS:
         - dir::../ip/meme_puf/lib/meme_puf_bank.lib
     instances:
       puf_i:
-        location: [480, 1000]
+        # left margin band, centred among the 4 analog pads (y 1298-1797)
+        location: [500, 1540]
+        orientation: N
+
+  # Pre-drawn pad<->bank straps (see ip/meme_puf/script/gen_routes.py).
+  # Real copper merges analog_PAD[0..3] with the bank pins (the router can't:
+  # SPECIAL nets); exposed as LEF PINs + an M5 bond-pad tab per net because
+  # magic extraction runs in abstract (LEF) mode where OBS isn't conductive.
+  # Location MUST equal gen_routes.py ORIGIN.
+  puf_routes:
+    gds:
+      - dir::../ip/meme_puf/gds/puf_routes.gds
+    lef:
+      - dir::../ip/meme_puf/lef/puf_routes.lef
+    vh:
+      - dir::../ip/meme_puf/vh/puf_routes.v
+    lib:
+      "*":
+        - dir::../ip/meme_puf/lib/puf_routes.lib
+    instances:
+      routes_i:
+        location: [43, 1290]
         orientation: N

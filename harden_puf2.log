@@ -1,0 +1,2070 @@
+Wrote C:/Users/anfro/Documents/GitHub/eurosynth/src/generated_defines.svh  (SLOT_1X0P5, SRAM_gf180mcu_fd_ip_sram)
+[harden] DEV mode: applying librelane/dev_fast.yaml (reduced STA corners -- NOT signoff)
+ Image eurosynth-harden Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 657B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile.harden
+#2 transferring dockerfile: 2.81kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for ghcr.io/librelane/librelane:3.1.0.dev2
+#3 DONE 1.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [1/3] FROM ghcr.io/librelane/librelane:3.1.0.dev2@sha256:88f0b2f4880a3116cd3f1fd41e61354d7dbe49b68bc955839274f33323c78c8b
+#5 DONE 0.0s
+
+#6 [2/3] RUN set -eux;     mkdir -p /opt/pmap-shim;     printf '%s\n'       '#!/bin/sh'       '# Minimal pmap shim (procps is absent from the LibreLane image). Used only by'       '# the PDK KLayout decks for memory logging; emits a pmap-style total line.'       'pid=""; for a in "$@"; do case "$a" in -*) : ;; *) pid="$a" ;; esac; done'       'kb=0'       'if [ -n "$pid" ] && [ -r "/proc/$pid/status" ]; then'       '  while read -r key val _; do [ "$key" = VmSize: ] && kb="$val"; done < "/proc/$pid/status"'       'fi'       'echo "${pid:-0}:   pmap-shim"'       'echo " total ${kb}K"'       > /opt/pmap-shim/pmap;     chmod 0755 /opt/pmap-shim/pmap;     kbin="$(command -v klayout 2>/dev/null || true)";     if [ -n "$kbin" ]; then kdir="$(dirname "$kbin")"; [ -w "$kdir" ] && cp /opt/pmap-shim/pmap "$kdir/pmap" || true; fi;     /opt/pmap-shim/pmap 1
+#6 CACHED
+
+#7 [3/3] WORKDIR /work
+#7 CACHED
+
+#8 exporting to image
+#8 exporting layers done
+#8 writing image sha256:e59dd6454e2d135166bc594ad1f3ab5b6a662ce09eba7a06a58af73356ddb30a done
+#8 naming to docker.io/library/eurosynth-harden done
+#8 DONE 0.0s
+
+#9 resolving provenance for metadata file
+#9 DONE 0.0s
+ Image eurosynth-harden Built 
+ Container eurosynth-harden-run-60c4e6d63f2c Creating 
+ Container eurosynth-harden-run-60c4e6d63f2c Created 
+[04:43:23] INFO     Starting a new run of the 'Chip'' flow with the  flow.py:654
+                    tag 'RUN_2026-07-14_04-43-23'.                              
+[04:43:23] INFO     Starting…                                  sequential.py:339
+──────────────────────────────── Verilator Lint ────────────────────────────────
+[04:43:24] VERBOSE  Running 'Verilator.Lint' at                     step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/01-veri             
+                    lator-lint'…                                                
+[04:43:24] VERBOSE  Logging subprocess to                           step.py:1338
+                    'librelane/runs/RUN_2026-07-14_04-43-23/01-veri             
+                    lator-lint/verilator-lint.log'…                             
+%Warning-DEFOVERRIDE: /work/src/generated_defines.svh:3:1: Overriding define:   
+'SLOT_1X0P5' with value: '' to existing command line define value: ''           
+                      ... Location of previous definition, with value: ''       
+                      ... For warning description see                           
+https://verilator.org/warn/DEFOVERRIDE?v=5.046                                  
+                      ... Use "/* verilator lint_off DEFOVERRIDE */" and lint_on
+around source to disable this message.                                          
+- V e r i l a t i o n   R e p o r t: Verilator 5.046 2026-02-28 rev v5.040      
+- Verilator: Built from 1.469 MB sources in 323 modules, into 0.003 MB in 3 C++ 
+files needing 0.000 MB                                                          
+- Verilator: Walltime 0.402 s (elab=0.028, cvt=0.126, bld=0.000); cpu 0.205 s on
+1 threads; allocated 30.262 MB                                                  
+────────────────────────── Lint Timing Errors Checker ──────────────────────────
+[04:43:25] VERBOSE  Running 'Checker.LintTimingConstructs' at       step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/02-chec             
+                    ker-linttimingconstructs'…                                  
+[04:43:25] INFO     Check for Lint Timing Errors clear.           checker.py:412
+───────────────────────────── Lint Errors Checker ──────────────────────────────
+[04:43:26] VERBOSE  Running 'Checker.LintErrors' at                 step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/03-chec             
+                    ker-linterrors'…                                            
+[04:43:26] INFO     Check for Lint errors clear.                  checker.py:131
+──────────────────────────── Lint Warnings Checker ─────────────────────────────
+[04:43:27] VERBOSE  Running 'Checker.LintWarnings' at               step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/04-chec             
+                    ker-lintwarnings'…                                          
+[04:43:27] WARNING  1 Lint warnings found.                        checker.py:122
+───────────────────────────── Generate JSON Header ─────────────────────────────
+[04:43:27] VERBOSE  Running 'Yosys.JsonHeader' at                   step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/05-yosy             
+                    s-jsonheader'…                                              
+[04:43:29] VERBOSE  Logging subprocess to                           step.py:1338
+                    'librelane/runs/RUN_2026-07-14_04-43-23/05-yosy             
+                    s-jsonheader/yosys-jsonheader.log'…                         
+                                                                                
+ /----------------------------------------------------------------------------\ 
+ |  yosys -- Yosys Open SYnthesis Suite                                       | 
+ |  Copyright (C) 2012 - 2026  Claire Xenia Wolf <claire@yosyshq.com>         | 
+ |  Distributed under an ISC-like license, type "license" to see terms        | 
+ \----------------------------------------------------------------------------/ 
+ Yosys 0.66 (git sha1 7f8fdfd8d7bc08c749a2a969388d3425d4f369d5, clang++ 21.1.2  
+-fPIC -O3)                                                                      
+                                                                                
+1. Executing Verilog-2005 frontend:                                             
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/1dcc78215f8245d9a4cf7a34c8e5c91
+e.bb.v                                                                          
+Parsing SystemVerilog input from                                                
+`/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/1dcc78215f8245d9a4cf7a34c8e5c9
+1e.bb.v' to AST representation.                                                 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__addf_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__addf_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__addf_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__addf_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__addh_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__addh_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__addh_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__addh_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and2_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and2_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and2_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__and2_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and3_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and3_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and3_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__and3_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and4_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and4_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__and4_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__and4_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__antenna'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__antenna_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi211_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi211_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi211_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__aoi211_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi21_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi21_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi21_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__aoi21_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi221_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi221_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi221_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__aoi221_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi222_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi222_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi222_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__aoi222_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi22_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi22_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__aoi22_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__aoi22_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_1'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_12'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_16'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_2'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_20'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_3'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_4'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_8'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__buf_func'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_12'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_16'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_3'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_4'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__bufz_8'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__bufz_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkbuf_1'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkbuf_12'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkbuf_16'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkbuf_2'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkbuf_20'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkbuf_3'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkbuf_4'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkbuf_8'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkbuf_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkinv_1'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkinv_12'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkinv_16'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkinv_2'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkinv_20'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkinv_3'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkinv_4'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__clkinv_8'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__clkinv_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffnq_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffnq_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffnq_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnq_func'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrnq_1'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrnq_2'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrnq_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrnq_func'.                                       
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_1'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_2'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_4'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_func'.                                      
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnsnq_1'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnsnq_2'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnsnq_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffnsnq_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffq_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffq_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffq_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffq_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffrnq_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffrnq_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffrnq_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffrnq_func'.                                        
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffrsnq_1'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffrsnq_2'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffrsnq_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffrsnq_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffsnq_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffsnq_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dffsnq_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dffsnq_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlya_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlya_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlya_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dlya_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyb_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyb_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyb_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dlyb_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyc_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyc_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyc_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dlyc_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyd_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyd_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__dlyd_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__dlyd_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__endcap'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__endcap_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_16'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_32'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_4'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_64'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__fill_8'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fill_func'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fillcap_16'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fillcap_32'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fillcap_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fillcap_64'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fillcap_8'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__fillcap_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__filltie'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__filltie_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__hold'.    
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__hold_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__icgtn_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__icgtn_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__icgtn_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__icgtn_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__icgtp_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__icgtp_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__icgtp_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__icgtp_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_1'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_12'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_16'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_2'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_20'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_3'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_4'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_8'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__inv_func'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_12'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_16'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_3'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_4'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__invz_8'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__invz_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latq_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latq_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latq_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latq_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latrnq_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latrnq_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latrnq_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latrnq_func'.                                        
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latrsnq_1'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latrsnq_2'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latrsnq_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latrsnq_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latsnq_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latsnq_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__latsnq_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__latsnq_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__mux2_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__mux2_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__mux2_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__mux2_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__mux4_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__mux4_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__mux4_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__mux4_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand2_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand2_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand2_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__nand2_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand3_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand3_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand3_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__nand3_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand4_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand4_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nand4_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__nand4_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor2_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor2_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor2_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__nor2_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor3_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor3_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor3_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__nor3_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor4_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor4_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__nor4_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__nor4_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai211_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai211_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai211_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai211_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai21_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai21_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai21_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai21_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai221_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai221_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai221_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai221_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai222_1'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai222_2'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai222_4'.
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai222_func'.                                        
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai22_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai22_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai22_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai22_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai31_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai31_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai31_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai31_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai32_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai32_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai32_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai32_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai33_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai33_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__oai33_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__oai33_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or2_1'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or2_2'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or2_4'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or2_func'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or3_1'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or3_2'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or3_4'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or3_func'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or4_1'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or4_2'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or4_4'.   
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__or4_func'.
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__sdffq_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__sdffq_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__sdffq_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffq_func'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrnq_1'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrnq_2'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrnq_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrnq_func'.                                       
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_1'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_2'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_4'.                                         
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_func'.                                      
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffsnq_1'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffsnq_2'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffsnq_4'.                                          
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__sdffsnq_func'.                                       
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__tieh'.    
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__tieh_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__tiel'.    
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__tiel_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xnor2_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xnor2_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xnor2_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__xnor2_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xnor3_1'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xnor3_2'. 
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xnor3_4'. 
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__xnor3_func'.                                         
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xor2_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xor2_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xor2_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__xor2_func'.                                          
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xor3_1'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xor3_2'.  
+Generating RTLIL representation for module `\gf180mcu_fd_sc_mcu7t5v0__xor3_4'.  
+Generating RTLIL representation for module                                      
+`\gf180mcu_fd_sc_mcu7t5v0__xor3_func'.                                          
+Successfully finished Verilog frontend.                                         
+                                                                                
+2. Executing Verilog-2005 frontend:                                             
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/5348f09cca854dbd985ac9a7d81635a
+0.bb.v                                                                          
+Parsing SystemVerilog input from                                                
+`/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/5348f09cca854dbd985ac9a7d81635
+a0.bb.v' to AST representation.                                                 
+Generating RTLIL representation for module `\gf180mcu_ef_io__bi_t'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__asig_5p0'.         
+Generating RTLIL representation for module `\gf180mcu_fd_io__bi_24t'.           
+Generating RTLIL representation for module `\gf180mcu_fd_io__bi_t'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__brk2'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__brk5'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__cor'.              
+Generating RTLIL representation for module `\gf180mcu_fd_io__dvdd'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__dvss'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__fill1'.            
+Generating RTLIL representation for module `\gf180mcu_fd_io__fill10'.           
+Generating RTLIL representation for module `\gf180mcu_fd_io__fill5'.            
+Generating RTLIL representation for module `\gf180mcu_fd_io__fillnc'.           
+Generating RTLIL representation for module `\gf180mcu_fd_io__in_c'.             
+Generating RTLIL representation for module `\gf180mcu_fd_io__in_s'.             
+Successfully finished Verilog frontend.                                         
+                                                                                
+3. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__qrcode_id/vh/gf180mcu_ws_ip__qrcode_id.v               
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__qrcode_id/vh/gf180mcu_ws_ip__qrcode_id.v' to AST      
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__qrcode_id'.        
+Successfully finished Verilog frontend.                                         
+                                                                                
+4. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__shuttle_id/vh/gf180mcu_ws_ip__shuttle_id.v             
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__shuttle_id/vh/gf180mcu_ws_ip__shuttle_id.v' to AST    
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__shuttle_id'.       
+Successfully finished Verilog frontend.                                         
+                                                                                
+5. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__project_id/vh/gf180mcu_ws_ip__project_id.v             
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__project_id/vh/gf180mcu_ws_ip__project_id.v' to AST    
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__project_id'.       
+Successfully finished Verilog frontend.                                         
+                                                                                
+6. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__marker/vh/gf180mcu_ws_ip__marker.v                     
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__marker/vh/gf180mcu_ws_ip__marker.v' to AST            
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__marker'.           
+Successfully finished Verilog frontend.                                         
+                                                                                
+7. Executing Verilog-2005 frontend: /work/ip/meme/vh/meme.v                     
+Parsing SystemVerilog input from `/work/ip/meme/vh/meme.v' to AST               
+representation.                                                                 
+Generating RTLIL representation for module `\meme'.                             
+Successfully finished Verilog frontend.                                         
+                                                                                
+8. Executing Verilog-2005 frontend: /work/ip/meme_puf/vh/meme_puf_bank.v        
+Parsing SystemVerilog input from `/work/ip/meme_puf/vh/meme_puf_bank.v' to AST  
+representation.                                                                 
+Generating RTLIL representation for module `\meme_puf_bank'.                    
+Successfully finished Verilog frontend.                                         
+                                                                                
+9. Executing Verilog-2005 frontend: /work/ip/meme_puf/vh/puf_routes.v           
+Parsing SystemVerilog input from `/work/ip/meme_puf/vh/puf_routes.v' to AST     
+representation.                                                                 
+Generating RTLIL representation for module `\puf_routes'.                       
+Successfully finished Verilog frontend.                                         
+wtaf                                                                            
+                                                                                
+10. Executing Verilog-2005 frontend: /work/src/chip_top.sv                      
+Parsing SystemVerilog input from `/work/src/chip_top.sv' to AST representation. 
+Storing AST representation for module `$abstract\chip_top'.                     
+Successfully finished Verilog frontend.                                         
+                                                                                
+11. Executing Verilog-2005 frontend: /work/src/chip_core.sv                     
+Parsing SystemVerilog input from `/work/src/chip_core.sv' to AST representation.
+Storing AST representation for module `$abstract\chip_core'.                    
+Successfully finished Verilog frontend.                                         
+                                                                                
+12. Executing HIERARCHY pass (managing design hierarchy).                       
+                                                                                
+13. Executing AST frontend in derive mode using pre-parsed AST for module       
+`\chip_top'.                                                                    
+Generating RTLIL representation for module `\chip_top'.                         
+                                                                                
+13.1. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Parameter \NUM_INPUT_PADS = 4                                                   
+Parameter \NUM_BIDIR_PADS = 46                                                  
+Parameter \NUM_ANALOG_PADS = 4                                                  
+                                                                                
+13.2. Executing AST frontend in derive mode using pre-parsed AST for module     
+`\chip_core'.                                                                   
+Parameter \NUM_INPUT_PADS = 4                                                   
+Parameter \NUM_BIDIR_PADS = 46                                                  
+Parameter \NUM_ANALOG_PADS = 4                                                  
+Generating RTLIL representation for module                                      
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core'.                  
+                                                                                
+13.3. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Used module:     $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core    
+                                                                                
+13.4. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Used module:     $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core    
+Removing unused module `$abstract\chip_core'.                                   
+Removing unused module `$abstract\chip_top'.                                    
+Removed 2 unused modules.                                                       
+Renaming module chip_top to chip_top.                                           
+                                                                                
+14. Executing PROC pass (convert processes to netlists).                        
+                                                                                
+14.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).    
+Cleaned up 0 empty switches.                                                    
+                                                                                
+14.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).    
+Marked 1 switch rules as full_case in process $proc$/work/src/chip_core.sv:58$8 
+in module $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.          
+Removed a total of 0 dead cases.                                                
+                                                                                
+14.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).    
+Removed 1 redundant assignment.                                                 
+Promoted 0 assignments to connections.                                          
+                                                                                
+14.4. Executing PROC_INIT pass (extract init attributes).                       
+                                                                                
+14.5. Executing PROC_ARST pass (detect async resets in processes).              
+                                                                                
+14.6. Executing PROC_ROM pass (convert switches to ROMs).                       
+Converted 0 switches.                                                           
+<suppressed ~1 debug messages>                                                  
+                                                                                
+14.7. Executing PROC_MUX pass (convert decision trees to multiplexers).         
+Creating decoders for process                                                   
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+     1/1: $0\wow[25:0]                                                          
+                                                                                
+14.8. Executing PROC_DLATCH pass (convert process syncs to latches).            
+                                                                                
+14.9. Executing PROC_DFF pass (convert process syncs to FFs).                   
+Creating register for signal                                                    
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.\wow' using process
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+  created $dff cell `$procdff$15' with positive edge clock.                     
+                                                                                
+14.10. Executing PROC_MEMWR pass (convert process memory writes to cells).      
+                                                                                
+14.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).   
+Found and cleaned up 1 empty switch in                                          
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+Removing empty process                                                          
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+Cleaned up 1 empty switch.                                                      
+                                                                                
+14.12. Executing OPT_EXPR pass (perform const folding).                         
+Optimizing module chip_top.                                                     
+Optimizing module $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.  
+<suppressed ~2 debug messages>                                                  
+                                                                                
+15. Executing FLATTEN pass (flatten design).                                    
+Deleting now unused module                                                      
+$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.                    
+<suppressed ~1 debug messages>                                                  
+                                                                                
+16. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+Removed 2 unused cells and 30 unused wires.                                     
+<suppressed ~29 debug messages>                                                 
+────────────────────────────────── Synthesis ───────────────────────────────────
+[04:43:30] VERBOSE  Running 'Yosys.Synthesis' at                    step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/06-yosy             
+                    s-synthesis'…                                               
+[04:43:30] VERBOSE  Logging subprocess to                           step.py:1338
+                    'librelane/runs/RUN_2026-07-14_04-43-23/06-yosy             
+                    s-synthesis/yosys-synthesis.log'…                           
+                                                                                
+ /----------------------------------------------------------------------------\ 
+ |  yosys -- Yosys Open SYnthesis Suite                                       | 
+ |  Copyright (C) 2012 - 2026  Claire Xenia Wolf <claire@yosyshq.com>         | 
+ |  Distributed under an ISC-like license, type "license" to see terms        | 
+ \----------------------------------------------------------------------------/ 
+ Yosys 0.66 (git sha1 7f8fdfd8d7bc08c749a2a969388d3425d4f369d5, clang++ 21.1.2  
+-fPIC -O3)                                                                      
+                                                                                
+1. Executing Liberty frontend:                                                  
+/pdk/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__tt_
+025C_5v00.lib                                                                   
+Imported 229 cell types from liberty file.                                      
+                                                                                
+2. Executing Liberty frontend:                                                  
+/pdk/gf180mcuD/libs.ref/gf180mcu_fd_io/lib/gf180mcu_fd_io__tt_025C_5v00.lib     
+Imported 14 cell types from liberty file.                                       
+                                                                                
+3. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__qrcode_id/vh/gf180mcu_ws_ip__qrcode_id.v               
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__qrcode_id/vh/gf180mcu_ws_ip__qrcode_id.v' to AST      
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__qrcode_id'.        
+Successfully finished Verilog frontend.                                         
+                                                                                
+4. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__shuttle_id/vh/gf180mcu_ws_ip__shuttle_id.v             
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__shuttle_id/vh/gf180mcu_ws_ip__shuttle_id.v' to AST    
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__shuttle_id'.       
+Successfully finished Verilog frontend.                                         
+                                                                                
+5. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__project_id/vh/gf180mcu_ws_ip__project_id.v             
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__project_id/vh/gf180mcu_ws_ip__project_id.v' to AST    
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__project_id'.       
+Successfully finished Verilog frontend.                                         
+                                                                                
+6. Executing Verilog-2005 frontend:                                             
+/work/ip/gf180mcu_ws_ip__marker/vh/gf180mcu_ws_ip__marker.v                     
+Parsing SystemVerilog input from                                                
+`/work/ip/gf180mcu_ws_ip__marker/vh/gf180mcu_ws_ip__marker.v' to AST            
+representation.                                                                 
+Generating RTLIL representation for module `\gf180mcu_ws_ip__marker'.           
+Successfully finished Verilog frontend.                                         
+                                                                                
+7. Executing Verilog-2005 frontend: /work/ip/meme/vh/meme.v                     
+Parsing SystemVerilog input from `/work/ip/meme/vh/meme.v' to AST               
+representation.                                                                 
+Generating RTLIL representation for module `\meme'.                             
+Successfully finished Verilog frontend.                                         
+                                                                                
+8. Executing Verilog-2005 frontend: /work/ip/meme_puf/vh/meme_puf_bank.v        
+Parsing SystemVerilog input from `/work/ip/meme_puf/vh/meme_puf_bank.v' to AST  
+representation.                                                                 
+Generating RTLIL representation for module `\meme_puf_bank'.                    
+Successfully finished Verilog frontend.                                         
+                                                                                
+9. Executing Verilog-2005 frontend: /work/ip/meme_puf/vh/puf_routes.v           
+Parsing SystemVerilog input from `/work/ip/meme_puf/vh/puf_routes.v' to AST     
+representation.                                                                 
+Generating RTLIL representation for module `\puf_routes'.                       
+Successfully finished Verilog frontend.                                         
+[INFO] Using SDC file                                                           
+'/work/librelane/runs/RUN_2026-07-14_04-43-23/06-yosys-synthesis/synthesis.abc.s
+dc' for ABC…wtaf                                                                
+                                                                                
+10. Executing Verilog-2005 frontend: /work/src/chip_top.sv                      
+Parsing SystemVerilog input from `/work/src/chip_top.sv' to AST representation. 
+Storing AST representation for module `$abstract\chip_top'.                     
+Successfully finished Verilog frontend.                                         
+                                                                                
+11. Executing Verilog-2005 frontend: /work/src/chip_core.sv                     
+Parsing SystemVerilog input from `/work/src/chip_core.sv' to AST representation.
+Storing AST representation for module `$abstract\chip_core'.                    
+Successfully finished Verilog frontend.                                         
+                                                                                
+12. Executing HIERARCHY pass (managing design hierarchy).                       
+                                                                                
+13. Executing AST frontend in derive mode using pre-parsed AST for module       
+`\chip_top'.                                                                    
+Generating RTLIL representation for module `\chip_top'.                         
+                                                                                
+13.1. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Parameter \NUM_INPUT_PADS = 4                                                   
+Parameter \NUM_BIDIR_PADS = 46                                                  
+Parameter \NUM_ANALOG_PADS = 4                                                  
+                                                                                
+13.2. Executing AST frontend in derive mode using pre-parsed AST for module     
+`\chip_core'.                                                                   
+Parameter \NUM_INPUT_PADS = 4                                                   
+Parameter \NUM_BIDIR_PADS = 46                                                  
+Parameter \NUM_ANALOG_PADS = 4                                                  
+Generating RTLIL representation for module                                      
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core'.                  
+                                                                                
+13.3. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Used module:     $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core    
+                                                                                
+13.4. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Used module:     $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core    
+Removing unused module `$abstract\chip_core'.                                   
+Removing unused module `$abstract\chip_top'.                                    
+Removed 2 unused modules.                                                       
+Renaming module chip_top to chip_top.                                           
+                                                                                
+14. Executing ATTRMAP pass (move or copy attributes).                           
+                                                                                
+15. Executing HIERARCHY pass (managing design hierarchy).                       
+                                                                                
+15.1. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Used module:     $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core    
+                                                                                
+15.2. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Used module:     $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core    
+Removed 0 unused modules.                                                       
+                                                                                
+16. Executing PROC_CLEAN pass (remove empty switches from decision trees).      
+Cleaned up 0 empty switches.                                                    
+                                                                                
+17. Executing PROC_RMDEAD pass (remove dead branches from decision trees).      
+Marked 1 switch rules as full_case in process $proc$/work/src/chip_core.sv:58$8 
+in module $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.          
+Removed a total of 0 dead cases.                                                
+                                                                                
+18. Executing PROC_PRUNE pass (remove redundant assignments in processes).      
+Removed 1 redundant assignment.                                                 
+Promoted 0 assignments to connections.                                          
+                                                                                
+19. Executing PROC_INIT pass (extract init attributes).                         
+                                                                                
+20. Executing PROC_ARST pass (detect async resets in processes).                
+                                                                                
+21. Executing PROC_ROM pass (convert switches to ROMs).                         
+Converted 0 switches.                                                           
+<suppressed ~1 debug messages>                                                  
+                                                                                
+22. Executing PROC_MUX pass (convert decision trees to multiplexers).           
+Creating decoders for process                                                   
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+     1/1: $0\wow[25:0]                                                          
+                                                                                
+23. Executing PROC_DLATCH pass (convert process syncs to latches).              
+                                                                                
+24. Executing PROC_DFF pass (convert process syncs to FFs).                     
+Creating register for signal                                                    
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.\wow' using process
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+  created $dff cell `$procdff$15' with positive edge clock.                     
+                                                                                
+25. Executing PROC_MEMWR pass (convert process memory writes to cells).         
+                                                                                
+26. Executing PROC_CLEAN pass (remove empty switches from decision trees).      
+Found and cleaned up 1 empty switch in                                          
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+Removing empty process                                                          
+`$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.$proc$/work/src/chi
+p_core.sv:58$8'.                                                                
+Cleaned up 1 empty switch.                                                      
+                                                                                
+27. Executing CHECK pass (checking for obvious problems).                       
+Checking module chip_top...                                                     
+Checking module $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core...  
+Found and reported 0 problems.                                                  
+                                                                                
+28. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+Optimizing module $paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.  
+<suppressed ~2 debug messages>                                                  
+                                                                                
+29. Executing FLATTEN pass (flatten design).                                    
+Deleting now unused module                                                      
+$paramod$5987e30a392c4c360cc557bc3ca420d0af6a5641\chip_core.                    
+<suppressed ~1 debug messages>                                                  
+                                                                                
+30. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+31. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+Removed 1 unused cells and 4 unused wires.                                      
+<suppressed ~2 debug messages>                                                  
+                                                                                
+32. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+33. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 83 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+34. Executing OPT_MUXTREE pass (detect dead branches in mux trees).             
+Running muxtree optimizer on module \chip_top..                                 
+  Creating internal representation of mux trees.                                
+  Evaluating internal representation of mux trees.                              
+  Analyzing evaluation results.                                                 
+Removed 0 multiplexer ports.                                                    
+<suppressed ~2 debug messages>                                                  
+                                                                                
+35. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).         
+  Optimizing cells in module \chip_top.                                         
+Performed a total of 0 changes.                                                 
+                                                                                
+36. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 83 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+37. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+38. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+39. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+40. Executing FSM pass (extract and optimize FSM).                              
+                                                                                
+40.1. Executing FSM_DETECT pass (finding FSMs in design).                       
+                                                                                
+40.2. Executing FSM_EXTRACT pass (extracting FSM from design).                  
+                                                                                
+40.3. Executing FSM_OPT pass (simple optimizations of FSMs).                    
+                                                                                
+40.4. Executing OPT_CLEAN pass (remove unused cells and wires).                 
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+40.5. Executing FSM_OPT pass (simple optimizations of FSMs).                    
+                                                                                
+40.6. Executing FSM_RECODE pass (re-assigning FSM state encoding).              
+                                                                                
+40.7. Executing FSM_INFO pass (dumping all available information on FSM cells). 
+                                                                                
+40.8. Executing FSM_MAP pass (mapping FSMs to basic logic).                     
+                                                                                
+41. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+42. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 83 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+43. Executing OPT_MUXTREE pass (detect dead branches in mux trees).             
+Running muxtree optimizer on module \chip_top..                                 
+  Creating internal representation of mux trees.                                
+  Evaluating internal representation of mux trees.                              
+  Analyzing evaluation results.                                                 
+Removed 0 multiplexer ports.                                                    
+<suppressed ~2 debug messages>                                                  
+                                                                                
+44. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).         
+  Optimizing cells in module \chip_top.                                         
+Performed a total of 0 changes.                                                 
+                                                                                
+45. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 83 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+46. Executing OPT_DFF pass (perform DFF optimizations).                         
+Adding SRST signal on $flatten\i_chip_core.$procdff$15 ($dff) from module       
+chip_top (D = $flatten\i_chip_core.$add$/work/src/chip_core.sv:60$10_Y, Q =     
+\i_chip_core.wow, rval = 26'00000000000000000000000000).                        
+                                                                                
+47. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+Removed 1 unused cells and 1 unused wires.                                      
+<suppressed ~2 debug messages>                                                  
+                                                                                
+48. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+49. Rerunning OPT passes. (Maybe there is more to do…)                          
+                                                                                
+50. Executing OPT_MUXTREE pass (detect dead branches in mux trees).             
+Running muxtree optimizer on module \chip_top..                                 
+  Creating internal representation of mux trees.                                
+  No muxes found in this module.                                                
+Removed 0 multiplexer ports.                                                    
+                                                                                
+51. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).         
+  Optimizing cells in module \chip_top.                                         
+Performed a total of 0 changes.                                                 
+                                                                                
+52. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 82 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+53. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+54. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+55. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+56. Executing WREDUCE pass (reducing word size of cells).                       
+                                                                                
+57. Executing PEEPOPT pass (run peephole optimizers).                           
+                                                                                
+58. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+59. Executing ALUMACC pass (create $alu and $macc cells).                       
+Extracting $alu and $macc cells in module chip_top:                             
+  creating $macc model for                                                      
+$flatten\i_chip_core.$add$/work/src/chip_core.sv:60$10 ($add).                  
+  creating $alu model for $macc                                                 
+$flatten\i_chip_core.$add$/work/src/chip_core.sv:60$10.                         
+  creating $alu cell for $flatten\i_chip_core.$add$/work/src/chip_core.sv:60$10:
+$auto$alumacc.cc:512:replace_alu$18                                             
+  created 1 $alu and 0 $macc cells.                                             
+                                                                                
+60. Executing SHARE pass (SAT-based resource sharing).                          
+                                                                                
+61. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+62. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 82 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+63. Executing OPT_MUXTREE pass (detect dead branches in mux trees).             
+Running muxtree optimizer on module \chip_top..                                 
+  Creating internal representation of mux trees.                                
+  No muxes found in this module.                                                
+Removed 0 multiplexer ports.                                                    
+                                                                                
+64. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).         
+  Optimizing cells in module \chip_top.                                         
+Performed a total of 0 changes.                                                 
+                                                                                
+65. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 82 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+66. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+67. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+68. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+69. Executing MEMORY pass.                                                      
+                                                                                
+69.1. Executing OPT_MEM pass (optimize memories).                               
+Performed a total of 0 transformations.                                         
+                                                                                
+69.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write        
+priority relations).                                                            
+Performed a total of 0 transformations.                                         
+                                                                                
+69.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback    
+paths).                                                                         
+                                                                                
+69.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).                
+                                                                                
+69.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).                 
+                                                                                
+69.6. Executing OPT_CLEAN pass (remove unused cells and wires).                 
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+69.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).          
+                                                                                
+69.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.                                         
+                                                                                
+69.9. Executing OPT_CLEAN pass (remove unused cells and wires).                 
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+69.10. Executing MEMORY_COLLECT pass (generating $mem cells).                   
+                                                                                
+70. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+71. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+72. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 82 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+73. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+74. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+75. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).    
+                                                                                
+76. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+77. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 82 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+78. Executing OPT_MUXTREE pass (detect dead branches in mux trees).             
+Running muxtree optimizer on module \chip_top..                                 
+  Creating internal representation of mux trees.                                
+  No muxes found in this module.                                                
+Removed 0 multiplexer ports.                                                    
+                                                                                
+79. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).         
+  Optimizing cells in module \chip_top.                                         
+Performed a total of 0 changes.                                                 
+                                                                                
+80. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 82 cells of `\chip_top'.                                    
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+81. Executing OPT_SHARE pass.                                                   
+                                                                                
+82. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+83. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+84. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+85. Executing TECHMAP pass (map to technology primitives).                      
+                                                                                
+85.1. Executing Verilog-2005 frontend:                                          
+/nix/store/xw67svsbjbsik1bdxjhcl6k5dlcc6dgw-yosys-0.66/bin/../share/yosys/techma
+p.v                                                                             
+Parsing Verilog input from                                                      
+`/nix/store/xw67svsbjbsik1bdxjhcl6k5dlcc6dgw-yosys-0.66/bin/../share/yosys/techm
+ap.v' to AST representation.                                                    
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.           
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.         
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.          
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.        
+Generating RTLIL representation for module `\_90_simplemap_various'.            
+Generating RTLIL representation for module `\_90_simplemap_registers'.          
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.  
+Generating RTLIL representation for module `\_90_shift_shiftx'.                 
+Generating RTLIL representation for module `\_90_fa'.                           
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.               
+Generating RTLIL representation for module `\_90_alu'.                          
+Generating RTLIL representation for module `\_90_macc'.                         
+Generating RTLIL representation for module `\_90_alumacc'.                      
+Generating RTLIL representation for module `$__div_mod_u'.                      
+Generating RTLIL representation for module `$__div_mod_trunc'.                  
+Generating RTLIL representation for module `\_90_div'.                          
+Generating RTLIL representation for module `\_90_mod'.                          
+Generating RTLIL representation for module `$__div_mod_floor'.                  
+Generating RTLIL representation for module `\_90_divfloor'.                     
+Generating RTLIL representation for module `\_90_modfloor'.                     
+Generating RTLIL representation for module `\_90_pow'.                          
+Generating RTLIL representation for module `\_90_demux'.                        
+Generating RTLIL representation for module `\_90_lut'.                          
+Generating RTLIL representation for module `$connect'.                          
+Generating RTLIL representation for module `$input_port'.                       
+Successfully finished Verilog frontend.                                         
+                                                                                
+85.2. Continuing TECHMAP pass.                                                  
+Using template $paramod$a8151eed7df109f18d5adf1169b40bb7b9e884a8\_90_alu for    
+cells of type $alu.                                                             
+Using extmapper simplemap for cells of type $sdff.                              
+Using extmapper simplemap for cells of type $xor.                               
+Using template $paramod\_90_fa\WIDTH=32'00000000000000000000000000011010 for    
+cells of type $fa.                                                              
+Using template                                                                  
+$paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000011010 for cells 
+of type $lcu.                                                                   
+Using extmapper simplemap for cells of type $pos.                               
+Using extmapper simplemap for cells of type $mux.                               
+Using extmapper simplemap for cells of type $not.                               
+Using extmapper simplemap for cells of type $or.                                
+Using extmapper simplemap for cells of type $and.                               
+No more expansions possible.                                                    
+<suppressed ~363 debug messages>                                                
+                                                                                
+86. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+<suppressed ~223 debug messages>                                                
+                                                                                
+87. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 202 cells of `\chip_top'.                                   
+Finding duplicate cells in `\chip_top'.                                         
+Computing hashes of 201 cells of `\chip_top'.                                   
+Finding duplicate cells in `\chip_top'.                                         
+<suppressed ~3 debug messages>                                                  
+Removed a total of 1 cells.                                                     
+                                                                                
+88. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+89. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+Removed 27 unused cells and 105 unused wires.                                   
+<suppressed ~28 debug messages>                                                 
+                                                                                
+90. Executing OPT_EXPR pass (perform const folding).                            
+Optimizing module chip_top.                                                     
+                                                                                
+91. Executing OPT_MERGE pass (detect identical cells).                          
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 174 cells of `\chip_top'.                                   
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+92. Executing OPT_DFF pass (perform DFF optimizations).                         
+                                                                                
+93. Executing OPT_CLEAN pass (remove unused cells and wires).                   
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+94. Executing ABC pass (technology mapping using ABC).                          
+                                                                                
+94.1. Extracting gate netlist of module `\chip_top' to                          
+`<abc-temp-dir>/input.blif'..                                                   
+                                                                                
+94.1.1. Executed ABC.                                                           
+Extracted 68 gates and 94 wires to a netlist network with 26 inputs and 26      
+outputs.                                                                        
+Running ABC script: <abc-temp-dir>/abc.script                                   
+ABC: ======== ABC command line "source <abc-temp-dir>/abc.script"               
+ABC: + read_blif <abc-temp-dir>/input.blif                                      
+ABC: + read_library <abc-temp-dir>/stdcells.genlib                              
+ABC: + strash                                                                   
+ABC: + dretime                                                                  
+ABC: + map                                                                      
+ABC: + write_blif <abc-temp-dir>/output.blif                                    
+                                                                                
+94.1.2. Re-integrating ABC results.                                             
+ABC RESULTS:            ANDNOT cells:       12                                  
+ABC RESULTS:              NAND cells:       12                                  
+ABC RESULTS:               NOT cells:        1                                  
+ABC RESULTS:                OR cells:       18                                  
+ABC RESULTS:              XNOR cells:       12                                  
+ABC RESULTS:               XOR cells:       13                                  
+ABC RESULTS:        internal signals:       42                                  
+ABC RESULTS:           input signals:       26                                  
+ABC RESULTS:          output signals:       26                                  
+Removing temp directory.                                                        
+Removing global temp directory.                                                 
+                                                                                
+95. Executing OPT pass (performing simple optimizations).                       
+                                                                                
+95.1. Executing OPT_EXPR pass (perform const folding).                          
+Optimizing module chip_top.                                                     
+                                                                                
+95.2. Executing OPT_MERGE pass (detect identical cells).                        
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 174 cells of `\chip_top'.                                   
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+95.3. Executing OPT_DFF pass (perform DFF optimizations).                       
+                                                                                
+95.4. Executing OPT_CLEAN pass (remove unused cells and wires).                 
+Finding unused cells or wires in module \chip_top..                             
+Removed 0 unused cells and 71 unused wires.                                     
+<suppressed ~1 debug messages>                                                  
+                                                                                
+95.5. Finished fast OPT passes.                                                 
+                                                                                
+96. Executing HIERARCHY pass (managing design hierarchy).                       
+                                                                                
+96.1. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+                                                                                
+96.2. Analyzing design hierarchy..                                              
+Top module:  \chip_top                                                          
+Removed 0 unused modules.                                                       
+                                                                                
+97. Executing CHECK pass (checking for obvious problems).                       
+Checking module chip_top...                                                     
+Found and reported 0 problems.                                                  
+                                                                                
+98. Printing statistics.                                                        
+                                                                                
+=== chip_top ===                                                                
+                                                                                
+        +----------Local Count, excluding submodules.                           
+        |                                                                       
+       78 wires                                                                 
+      945 wire bits                                                             
+       34 public wires                                                          
+      851 public wire bits                                                      
+        5 ports                                                                 
+       56 port bits                                                             
+      174 cells                                                                 
+       12   $_ANDNOT_                                                           
+       12   $_NAND_                                                             
+        1   $_NOT_                                                              
+       18   $_OR_                                                               
+       26   $_SDFF_PN0_                                                         
+       12   $_XNOR_                                                             
+       13   $_XOR_                                                              
+        1   $scopeinfo                                                          
+        4   gf180mcu_fd_io__asig_5p0                                            
+       46   gf180mcu_fd_io__bi_24t                                              
+        8   gf180mcu_fd_io__dvdd                                                
+        8   gf180mcu_fd_io__dvss                                                
+        5   gf180mcu_fd_io__in_c                                                
+        1   gf180mcu_fd_io__in_s                                                
+        1   gf180mcu_ws_ip__marker                                              
+        1   gf180mcu_ws_ip__project_id                                          
+        1   gf180mcu_ws_ip__qrcode_id                                           
+        1   gf180mcu_ws_ip__shuttle_id                                          
+        1   meme                                                                
+        1   meme_puf_bank                                                       
+        1   puf_routes                                                          
+                                                                                
+99. Executing OPT pass (performing simple optimizations).                       
+                                                                                
+99.1. Executing OPT_EXPR pass (perform const folding).                          
+Optimizing module chip_top.                                                     
+                                                                                
+99.2. Executing OPT_MERGE pass (detect identical cells).                        
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 174 cells of `\chip_top'.                                   
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+99.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).           
+Running muxtree optimizer on module \chip_top..                                 
+  Creating internal representation of mux trees.                                
+  No muxes found in this module.                                                
+Removed 0 multiplexer ports.                                                    
+                                                                                
+99.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).       
+  Optimizing cells in module \chip_top.                                         
+Performed a total of 0 changes.                                                 
+                                                                                
+99.5. Executing OPT_MERGE pass (detect identical cells).                        
+Finding identical cells in module `\chip_top'.                                  
+Computing hashes of 174 cells of `\chip_top'.                                   
+Finding duplicate cells in `\chip_top'.                                         
+Removed a total of 0 cells.                                                     
+                                                                                
+99.6. Executing OPT_DFF pass (perform DFF optimizations).                       
+                                                                                
+99.7. Executing OPT_CLEAN pass (remove unused cells and wires).                 
+Finding unused cells or wires in module \chip_top..                             
+                                                                                
+99.8. Executing OPT_EXPR pass (perform const folding).                          
+Optimizing module chip_top.                                                     
+                                                                                
+99.9. Finished fast OPT passes. (There is nothing left to do.)                  
+                                                                                
+100. Executing OPT_CLEAN pass (remove unused cells and wires).                  
+Finding unused cells or wires in module \chip_top..                             
+Removed 1 unused cells and 24 unused wires.                                     
+<suppressed ~25 debug messages>                                                 
+{                                                                               
+   "creator": "Yosys 0.66 (git sha1 7f8fdfd8d7bc08c749a2a969388d3425d4f369d5,   
+clang++ 21.1.2 -fPIC -O3)",                                                     
+   "invocation": "stat -json -liberty                                           
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/d633faa5f3044ea4a97d8826462a451
+1.lib -liberty                                                                  
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/09084e98ca5540db84f69f9fa234800
+c.lib ",                                                                        
+   "modules": {                                                                 
+      "\\chip_top": {                                                           
+         "num_wires":         54,                                               
+         "num_wire_bits":     248,                                              
+         "num_pub_wires":     10,                                               
+         "num_pub_wire_bits": 154,                                              
+         "num_ports":         5,                                                
+         "num_port_bits":     56,                                               
+         "num_memories":      0,                                                
+         "num_memory_bits":   0,                                                
+         "num_processes":     0,                                                
+         "num_cells":         173,                                              
+         "num_submodules":       0,                                             
+         "area":              1890000.000000,                                   
+         "sequential_area":    0.000000,                                        
+         "num_cells_by_type": {                                                 
+            "$_ANDNOT_": 12,                                                    
+            "$_NAND_": 12,                                                      
+            "$_NOT_": 1,                                                        
+            "$_OR_": 18,                                                        
+            "$_SDFF_PN0_": 26,                                                  
+            "$_XNOR_": 12,                                                      
+            "$_XOR_": 13,                                                       
+            "gf180mcu_fd_io__asig_5p0": 4,                                      
+            "gf180mcu_fd_io__bi_24t": 46,                                       
+            "gf180mcu_fd_io__dvdd": 8,                                          
+            "gf180mcu_fd_io__dvss": 8,                                          
+            "gf180mcu_fd_io__in_c": 5,                                          
+            "gf180mcu_fd_io__in_s": 1,                                          
+            "gf180mcu_ws_ip__marker": 1,                                        
+            "gf180mcu_ws_ip__project_id": 1,                                    
+            "gf180mcu_ws_ip__qrcode_id": 1,                                     
+            "gf180mcu_ws_ip__shuttle_id": 1,                                    
+            "meme": 1,                                                          
+            "meme_puf_bank": 1,                                                 
+            "puf_routes": 1                                                     
+         }                                                                      
+      }                                                                         
+   },                                                                           
+      "design": {                                                               
+         "num_wires":         54,                                               
+         "num_wire_bits":     248,                                              
+         "num_pub_wires":     10,                                               
+         "num_pub_wire_bits": 154,                                              
+         "num_ports":         5,                                                
+         "num_port_bits":     56,                                               
+         "num_memories":      0,                                                
+         "num_memory_bits":   0,                                                
+         "num_processes":     0,                                                
+         "num_cells":         173,                                              
+         "num_submodules":       0,                                             
+         "area":              1890000.000000,                                   
+         "sequential_area":    0.000000,                                        
+         "num_cells_by_type": {                                                 
+            "$_ANDNOT_": 12,                                                    
+            "$_NAND_": 12,                                                      
+            "$_NOT_": 1,                                                        
+            "$_OR_": 18,                                                        
+            "$_SDFF_PN0_": 26,                                                  
+            "$_XNOR_": 12,                                                      
+            "$_XOR_": 13,                                                       
+            "gf180mcu_fd_io__asig_5p0": 4,                                      
+            "gf180mcu_fd_io__bi_24t": 46,                                       
+            "gf180mcu_fd_io__dvdd": 8,                                          
+            "gf180mcu_fd_io__dvss": 8,                                          
+            "gf180mcu_fd_io__in_c": 5,                                          
+            "gf180mcu_fd_io__in_s": 1,                                          
+            "gf180mcu_ws_ip__marker": 1,                                        
+            "gf180mcu_ws_ip__project_id": 1,                                    
+            "gf180mcu_ws_ip__qrcode_id": 1,                                     
+            "gf180mcu_ws_ip__shuttle_id": 1,                                    
+            "meme": 1,                                                          
+            "meme_puf_bank": 1,                                                 
+            "puf_routes": 1                                                     
+         }                                                                      
+      }                                                                         
+}                                                                               
+                                                                                
+101. Printing statistics.                                                       
+                                                                                
+=== chip_top ===                                                                
+                                                                                
+        +----------Local Count, excluding submodules.                           
+        |        +-Local Area, excluding submodules.                            
+        |        |                                                              
+       54        - wires                                                        
+      248        - wire bits                                                    
+       10        - public wires                                                 
+      154        - public wire bits                                             
+        5        - ports                                                        
+       56        - port bits                                                    
+      173  1890000 cells                                                        
+       12        -   $_ANDNOT_                                                  
+       12        -   $_NAND_                                                    
+        1        -   $_NOT_                                                     
+       18        -   $_OR_                                                      
+       26        -   $_SDFF_PN0_                                                
+       12        -   $_XNOR_                                                    
+       13        -   $_XOR_                                                     
+        4   105000   gf180mcu_fd_io__asig_5p0                                   
+       46  1207500   gf180mcu_fd_io__bi_24t                                     
+        8   210000   gf180mcu_fd_io__dvdd                                       
+        8   210000   gf180mcu_fd_io__dvss                                       
+        5   131250   gf180mcu_fd_io__in_c                                       
+        1    26250   gf180mcu_fd_io__in_s                                       
+        1        -   gf180mcu_ws_ip__marker                                     
+        1        -   gf180mcu_ws_ip__project_id                                 
+        1        -   gf180mcu_ws_ip__qrcode_id                                  
+        1        -   gf180mcu_ws_ip__shuttle_id                                 
+        1        -   meme                                                       
+        1        -   meme_puf_bank                                              
+        1        -   puf_routes                                                 
+                                                                                
+   Area for cell type $_ANDNOT_ is unknown!                                     
+   Area for cell type $_NAND_ is unknown!                                       
+   Area for cell type $_NOT_ is unknown!                                        
+   Area for cell type $_OR_ is unknown!                                         
+   Area for cell type $_SDFF_PN0_ is unknown!                                   
+   Area for cell type $_XNOR_ is unknown!                                       
+   Area for cell type $_XOR_ is unknown!                                        
+   Area for cell type \gf180mcu_ws_ip__qrcode_id is unknown!                    
+   Area for cell type \gf180mcu_ws_ip__shuttle_id is unknown!                   
+   Area for cell type \gf180mcu_ws_ip__project_id is unknown!                   
+   Area for cell type \gf180mcu_ws_ip__marker is unknown!                       
+   Area for cell type \meme is unknown!                                         
+   Area for cell type \meme_puf_bank is unknown!                                
+   Area for cell type \puf_routes is unknown!                                   
+                                                                                
+   Chip area for module '\chip_top': 1890000.000000                             
+     of which used for sequential elements: 0.000000 (0.00%)                    
+                                                                                
+102. Executing DFFLIBMAP pass (mapping DFF cells to sequential cells from       
+liberty file).                                                                  
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnq_1 (noninv, pins=3, area=65.86) is a direct
+match for cell type $_DFF_N_.                                                   
+  cell gf180mcu_fd_sc_mcu7t5v0__dffq_1 (noninv, pins=3, area=63.66) is a direct 
+match for cell type $_DFF_P_.                                                   
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnrnq_1 (noninv, pins=4, area=74.64) is a     
+direct match for cell type $_DFF_NN0_.                                          
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnsnq_1 (noninv, pins=4, area=79.03) is a     
+direct match for cell type $_DFF_NN1_.                                          
+  cell gf180mcu_fd_sc_mcu7t5v0__dffrnq_1 (noninv, pins=4, area=74.64) is a      
+direct match for cell type $_DFF_PN0_.                                          
+  cell gf180mcu_fd_sc_mcu7t5v0__dffsnq_1 (noninv, pins=4, area=79.03) is a      
+direct match for cell type $_DFF_PN1_.                                          
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_1 (noninv, pins=5, area=94.39) is a    
+direct match for cell type $_DFFSR_NNN_.                                        
+  cell gf180mcu_fd_sc_mcu7t5v0__dffrsnq_1 (noninv, pins=5, area=85.61) is a     
+direct match for cell type $_DFFSR_PNN_.                                        
+  final dff cell mappings:                                                      
+    \gf180mcu_fd_sc_mcu7t5v0__dffnq_1 _DFF_N_ (.CLKN( C), .D( D), .Q( Q));      
+    \gf180mcu_fd_sc_mcu7t5v0__dffq_1 _DFF_P_ (.CLK( C), .D( D), .Q( Q));        
+    \gf180mcu_fd_sc_mcu7t5v0__dffnrnq_1 _DFF_NN0_ (.CLKN( C), .D( D), .Q( Q),   
+.RN( R));                                                                       
+    \gf180mcu_fd_sc_mcu7t5v0__dffnsnq_1 _DFF_NN1_ (.CLKN( C), .D( D), .Q( Q),   
+.SETN( R));                                                                     
+    unmapped dff cell: $_DFF_NP0_                                               
+    unmapped dff cell: $_DFF_NP1_                                               
+    \gf180mcu_fd_sc_mcu7t5v0__dffrnq_1 _DFF_PN0_ (.CLK( C), .D( D), .Q( Q), .RN(
+R));                                                                            
+    \gf180mcu_fd_sc_mcu7t5v0__dffsnq_1 _DFF_PN1_ (.CLK( C), .D( D), .Q( Q),     
+.SETN( R));                                                                     
+    unmapped dff cell: $_DFF_PP0_                                               
+    unmapped dff cell: $_DFF_PP1_                                               
+    unmapped dff cell: $_DFFE_NN_                                               
+    unmapped dff cell: $_DFFE_NP_                                               
+    unmapped dff cell: $_DFFE_PN_                                               
+    unmapped dff cell: $_DFFE_PP_                                               
+    \gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_1 _DFFSR_NNN_ (.CLKN( C), .D( D), .Q( Q),
+.RN( R), .SETN( S));                                                            
+    unmapped dff cell: $_DFFSR_NNP_                                             
+    unmapped dff cell: $_DFFSR_NPN_                                             
+    unmapped dff cell: $_DFFSR_NPP_                                             
+    \gf180mcu_fd_sc_mcu7t5v0__dffrsnq_1 _DFFSR_PNN_ (.CLK( C), .D( D), .Q( Q),  
+.RN( R), .SETN( S));                                                            
+    unmapped dff cell: $_DFFSR_PNP_                                             
+    unmapped dff cell: $_DFFSR_PPN_                                             
+    unmapped dff cell: $_DFFSR_PPP_                                             
+                                                                                
+102.1. Executing DFFLEGALIZE pass (convert FFs to types supported by the        
+target).                                                                        
+Mapping DFF cells in module `\chip_top':                                        
+  mapped 26 $_DFF_P_ cells to \gf180mcu_fd_sc_mcu7t5v0__dffq_1 cells.           
+{                                                                               
+   "creator": "Yosys 0.66 (git sha1 7f8fdfd8d7bc08c749a2a969388d3425d4f369d5,   
+clang++ 21.1.2 -fPIC -O3)",                                                     
+   "invocation": "stat -json -liberty                                           
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/d633faa5f3044ea4a97d8826462a451
+1.lib -liberty                                                                  
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/09084e98ca5540db84f69f9fa234800
+c.lib ",                                                                        
+   "modules": {                                                                 
+      "\\chip_top": {                                                           
+         "num_wires":         80,                                               
+         "num_wire_bits":     274,                                              
+         "num_pub_wires":     10,                                               
+         "num_pub_wire_bits": 154,                                              
+         "num_ports":         5,                                                
+         "num_port_bits":     56,                                               
+         "num_memories":      0,                                                
+         "num_memory_bits":   0,                                                
+         "num_processes":     0,                                                
+         "num_cells":         199,                                              
+         "num_submodules":       0,                                             
+         "area":              1891655.180800,                                   
+         "sequential_area":    1655.180800,                                     
+         "num_cells_by_type": {                                                 
+            "$_ANDNOT_": 12,                                                    
+            "$_MUX_": 26,                                                       
+            "$_NAND_": 12,                                                      
+            "$_NOT_": 1,                                                        
+            "$_OR_": 18,                                                        
+            "$_XNOR_": 12,                                                      
+            "$_XOR_": 13,                                                       
+            "gf180mcu_fd_io__asig_5p0": 4,                                      
+            "gf180mcu_fd_io__bi_24t": 46,                                       
+            "gf180mcu_fd_io__dvdd": 8,                                          
+            "gf180mcu_fd_io__dvss": 8,                                          
+            "gf180mcu_fd_io__in_c": 5,                                          
+            "gf180mcu_fd_io__in_s": 1,                                          
+            "gf180mcu_fd_sc_mcu7t5v0__dffq_1": 26,                              
+            "gf180mcu_ws_ip__marker": 1,                                        
+            "gf180mcu_ws_ip__project_id": 1,                                    
+            "gf180mcu_ws_ip__qrcode_id": 1,                                     
+            "gf180mcu_ws_ip__shuttle_id": 1,                                    
+            "meme": 1,                                                          
+            "meme_puf_bank": 1,                                                 
+            "puf_routes": 1                                                     
+         }                                                                      
+      }                                                                         
+   },                                                                           
+      "design": {                                                               
+         "num_wires":         80,                                               
+         "num_wire_bits":     274,                                              
+         "num_pub_wires":     10,                                               
+         "num_pub_wire_bits": 154,                                              
+         "num_ports":         5,                                                
+         "num_port_bits":     56,                                               
+         "num_memories":      0,                                                
+         "num_memory_bits":   0,                                                
+         "num_processes":     0,                                                
+         "num_cells":         199,                                              
+         "num_submodules":       0,                                             
+         "area":              1891655.180800,                                   
+         "sequential_area":    1655.180800,                                     
+         "num_cells_by_type": {                                                 
+            "$_ANDNOT_": 12,                                                    
+            "$_MUX_": 26,                                                       
+            "$_NAND_": 12,                                                      
+            "$_NOT_": 1,                                                        
+            "$_OR_": 18,                                                        
+            "$_XNOR_": 12,                                                      
+            "$_XOR_": 13,                                                       
+            "gf180mcu_fd_io__asig_5p0": 4,                                      
+            "gf180mcu_fd_io__bi_24t": 46,                                       
+            "gf180mcu_fd_io__dvdd": 8,                                          
+            "gf180mcu_fd_io__dvss": 8,                                          
+            "gf180mcu_fd_io__in_c": 5,                                          
+            "gf180mcu_fd_io__in_s": 1,                                          
+            "gf180mcu_fd_sc_mcu7t5v0__dffq_1": 26,                              
+            "gf180mcu_ws_ip__marker": 1,                                        
+            "gf180mcu_ws_ip__project_id": 1,                                    
+            "gf180mcu_ws_ip__qrcode_id": 1,                                     
+            "gf180mcu_ws_ip__shuttle_id": 1,                                    
+            "meme": 1,                                                          
+            "meme_puf_bank": 1,                                                 
+            "puf_routes": 1                                                     
+         }                                                                      
+      }                                                                         
+}                                                                               
+                                                                                
+103. Printing statistics.                                                       
+                                                                                
+=== chip_top ===                                                                
+                                                                                
+        +----------Local Count, excluding submodules.                           
+        |        +-Local Area, excluding submodules.                            
+        |        |                                                              
+       80        - wires                                                        
+      274        - wire bits                                                    
+       10        - public wires                                                 
+      154        - public wire bits                                             
+        5        - ports                                                        
+       56        - port bits                                                    
+      199 1.89E+06 cells                                                        
+       12        -   $_ANDNOT_                                                  
+       26        -   $_MUX_                                                     
+       12        -   $_NAND_                                                    
+        1        -   $_NOT_                                                     
+       18        -   $_OR_                                                      
+       12        -   $_XNOR_                                                    
+       13        -   $_XOR_                                                     
+        4   105000   gf180mcu_fd_io__asig_5p0                                   
+       46  1207500   gf180mcu_fd_io__bi_24t                                     
+        8   210000   gf180mcu_fd_io__dvdd                                       
+        8   210000   gf180mcu_fd_io__dvss                                       
+        5   131250   gf180mcu_fd_io__in_c                                       
+        1    26250   gf180mcu_fd_io__in_s                                       
+       26 1.66E+03   gf180mcu_fd_sc_mcu7t5v0__dffq_1                            
+        1        -   gf180mcu_ws_ip__marker                                     
+        1        -   gf180mcu_ws_ip__project_id                                 
+        1        -   gf180mcu_ws_ip__qrcode_id                                  
+        1        -   gf180mcu_ws_ip__shuttle_id                                 
+        1        -   meme                                                       
+        1        -   meme_puf_bank                                              
+        1        -   puf_routes                                                 
+                                                                                
+   Area for cell type $_ANDNOT_ is unknown!                                     
+   Area for cell type $_MUX_ is unknown!                                        
+   Area for cell type $_NAND_ is unknown!                                       
+   Area for cell type $_NOT_ is unknown!                                        
+   Area for cell type $_OR_ is unknown!                                         
+   Area for cell type $_XNOR_ is unknown!                                       
+   Area for cell type $_XOR_ is unknown!                                        
+   Area for cell type \gf180mcu_ws_ip__qrcode_id is unknown!                    
+   Area for cell type \gf180mcu_ws_ip__shuttle_id is unknown!                   
+   Area for cell type \gf180mcu_ws_ip__project_id is unknown!                   
+   Area for cell type \gf180mcu_ws_ip__marker is unknown!                       
+   Area for cell type \meme is unknown!                                         
+   Area for cell type \meme_puf_bank is unknown!                                
+   Area for cell type \puf_routes is unknown!                                   
+                                                                                
+   Chip area for module '\chip_top': 1891655.180800                             
+     of which used for sequential elements: 1655.180800 (0.09%)                 
+                                                                                
+[INFO] Using generated ABC script                                               
+'/work/librelane/runs/RUN_2026-07-14_04-43-23/06-yosys-synthesis/AREA_0.abc'…   
+                                                                                
+104. Executing ABC pass (technology mapping using ABC).                         
+                                                                                
+104.1. Extracting gate netlist of module `\chip_top' to                         
+`/tmp/yosys-abc-wFxDIh/input.blif'..                                            
+                                                                                
+104.1.1. Executed ABC.                                                          
+Extracted 94 gates and 122 wires to a netlist network with 27 inputs and 26     
+outputs.                                                                        
+Running ABC script: /tmp/yosys-abc-wFxDIh/abc.script                            
+ABC: ======== ABC command line "source /tmp/yosys-abc-wFxDIh/abc.script"        
+ABC: + read_blif /tmp/yosys-abc-wFxDIh/input.blif                               
+ABC: + read_scl /tmp/yosys-liberty-scl-cache/yosys_merged_f6fdf27b.scl          
+ABC: Warning: Detected 6 multi-output cells (for example,                       
+"gf180mcu_fd_sc_mcu7t5v0__addf_1").                                             
+ABC: + read_constr -v                                                           
+/work/librelane/runs/RUN_2026-07-14_04-43-23/06-yosys-synthesis/synthesis.abc.sd
+c                                                                               
+ABC: Setting driving cell to be "gf180mcu_fd_sc_mcu7t5v0__inv_1/ZN".            
+ABC: Setting output load to be 72.910004.                                       
+ABC: + source                                                                   
+/work/librelane/runs/RUN_2026-07-14_04-43-23/06-yosys-synthesis/AREA_0.abc      
+ABC: Error: The network is combinational.                                       
+ABC: Cannot find the default PI driving cell (gf180mcu_fd_sc_mcu7t5v0__inv_1/ZN)
+in the library.                                                                 
+ABC: WireLoad = "none"  Gates =     82 (  9.8 %)   Cap = 25.8 ff (  1.6 %)      
+Area =     1380.78 ( 96.3 %)   Delay =  5750.46 ps  ( 11.0 %)                   
+ABC: Path  0 --       4 : 0    2 pi                                A =   0.00   
+Df =   0.0   -0.0 ps  S =   0.0 ps  Cin =  0.0 ff  Cout =   7.1 ff  Cmax =   0.0
+ff  G =    0                                                                    
+ABC: Path  1 --      62 : 4    7 gf180mcu_fd_sc_mcu7t5v0__and4_1   A =  24.15   
+Df = 732.2 -238.5 ps  S = 558.1 ps  Cin =  3.0 ff  Cout =  27.9 ff  Cmax = 238.3
+ff  G =  942                                                                    
+ABC: Path  2 --      65 : 4    4 gf180mcu_fd_sc_mcu7t5v0__nand4_1  A =  19.76   
+Df =1093.8 -168.7 ps  S = 599.5 ps  Cin =  4.0 ff  Cout =  14.8 ff  Cmax = 143.5
+ff  G =  369                                                                    
+ABC: Path  3 --      69 : 4    4 gf180mcu_fd_sc_mcu7t5v0__nor4_1   A =  21.95   
+Df =1918.4 -550.5 ps  S =1246.0 ps  Cin =  3.8 ff  Cout =  16.0 ff  Cmax =  62.2
+ff  G =  419                                                                    
+ABC: Path  4 --      73 : 4    5 gf180mcu_fd_sc_mcu7t5v0__nand4_1  A =  19.76   
+Df =2371.7 -451.2 ps  S = 747.2 ps  Cin =  4.0 ff  Cout =  19.7 ff  Cmax = 143.5
+ff  G =  492                                                                    
+ABC: Path  5 --      82 : 4    7 gf180mcu_fd_sc_mcu7t5v0__nor4_1   A =  21.95   
+Df =3666.2-1128.2 ps  S =2086.9 ps  Cin =  3.8 ff  Cout =  30.7 ff  Cmax =  62.2
+ff  G =  803                                                                    
+ABC: Path  6 --      88 : 4    1 gf180mcu_fd_sc_mcu7t5v0__aoi211_1 A =  21.95   
+Df =5750.5 -946.9 ps  S =3542.1 ps  Cin =  4.3 ff  Cout =  72.9 ff  Cmax =  82.4
+ff  G = 1702                                                                    
+ABC: Start-point = pi3 (\bidir_CORE2PAD [3]).  End-point = po3                  
+($auto$rtlil.cc:3501:MuxGate$657).                                              
+ABC: netlist                       : i/o =   27/   26  lat =    0  nd =    82   
+edge =    216  area =1380.72  delay = 7.00  lev = 7                             
+ABC: + write_blif /tmp/yosys-abc-wFxDIh/output.blif                             
+                                                                                
+104.1.2. Re-integrating ABC results.                                            
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__and2_1 cells:        6                  
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__and3_1 cells:        4                  
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__and4_1 cells:        1                  
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__aoi211_1 cells:        4                
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__aoi21_1 cells:       14                 
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__clkinv_1 cells:        8                
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nand2_1 cells:        3                 
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nand3_1 cells:        4                 
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nand4_1 cells:        3                 
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nor2_1 cells:       11                  
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nor3_1 cells:        8                  
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nor4_1 cells:        2                  
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__oai21_1 cells:       10                 
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__or2_1 cells:        1                   
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__xnor2_1 cells:        2                 
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__xor2_1 cells:        1                  
+ABC RESULTS:        internal signals:       69                                  
+ABC RESULTS:           input signals:       27                                  
+ABC RESULTS:          output signals:       26                                  
+Removing temp directory.                                                        
+Removing global temp directory.                                                 
+                                                                                
+105. Executing SETUNDEF pass (replace undef values with defined constants).     
+                                                                                
+106. Executing HILOMAP pass (mapping to constant drivers).                      
+                                                                                
+107. Executing SPLITNETS pass (splitting up multi-bit signals).                 
+                                                                                
+108. Executing OPT_CLEAN pass (remove unused cells and wires).                  
+Finding unused cells or wires in module \chip_top..                             
+Removed 0 unused cells and 167 unused wires.                                    
+<suppressed ~21 debug messages>                                                 
+                                                                                
+109. Executing INSBUF pass (insert buffer cells for connected wires).           
+                                                                                
+110. Executing CHECK pass (checking for obvious problems).                      
+Checking module chip_top...                                                     
+Found and reported 0 problems.                                                  
+{                                                                               
+   "creator": "Yosys 0.66 (git sha1 7f8fdfd8d7bc08c749a2a969388d3425d4f369d5,   
+clang++ 21.1.2 -fPIC -O3)",                                                     
+   "invocation": "stat -json -liberty                                           
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/d633faa5f3044ea4a97d8826462a451
+1.lib -liberty                                                                  
+/work/librelane/runs/RUN_2026-07-14_04-43-23/tmp/09084e98ca5540db84f69f9fa234800
+c.lib ",                                                                        
+   "modules": {                                                                 
+      "\\chip_top": {                                                           
+         "num_wires":         453,                                              
+         "num_wire_bits":     504,                                              
+         "num_pub_wires":     83,                                               
+         "num_pub_wire_bits": 134,                                              
+         "num_ports":         5,                                                
+         "num_port_bits":     56,                                               
+         "num_memories":      0,                                                
+         "num_memory_bits":   0,                                                
+         "num_processes":     0,                                                
+         "num_cells":         475,                                              
+         "num_submodules":       0,                                             
+         "area":              1895564.832000,                                   
+         "sequential_area":    1655.180800,                                     
+         "num_cells_by_type": {                                                 
+            "gf180mcu_fd_io__asig_5p0": 4,                                      
+            "gf180mcu_fd_io__bi_24t": 46,                                       
+            "gf180mcu_fd_io__dvdd": 8,                                          
+            "gf180mcu_fd_io__dvss": 8,                                          
+            "gf180mcu_fd_io__in_c": 5,                                          
+            "gf180mcu_fd_io__in_s": 1,                                          
+            "gf180mcu_fd_sc_mcu7t5v0__and2_1": 6,                               
+            "gf180mcu_fd_sc_mcu7t5v0__and3_1": 4,                               
+            "gf180mcu_fd_sc_mcu7t5v0__and4_1": 1,                               
+            "gf180mcu_fd_sc_mcu7t5v0__aoi211_1": 4,                             
+            "gf180mcu_fd_sc_mcu7t5v0__aoi21_1": 14,                             
+            "gf180mcu_fd_sc_mcu7t5v0__clkinv_1": 8,                             
+            "gf180mcu_fd_sc_mcu7t5v0__dffq_1": 26,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nand2_1": 3,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nand3_1": 4,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nand4_1": 3,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nor2_1": 11,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nor3_1": 8,                               
+            "gf180mcu_fd_sc_mcu7t5v0__nor4_1": 2,                               
+            "gf180mcu_fd_sc_mcu7t5v0__oai21_1": 10,                             
+            "gf180mcu_fd_sc_mcu7t5v0__or2_1": 1,                                
+            "gf180mcu_fd_sc_mcu7t5v0__tieh": 46,                                
+            "gf180mcu_fd_sc_mcu7t5v0__tiel": 242,                               
+            "gf180mcu_fd_sc_mcu7t5v0__xnor2_1": 2,                              
+            "gf180mcu_fd_sc_mcu7t5v0__xor2_1": 1,                               
+            "gf180mcu_ws_ip__marker": 1,                                        
+            "gf180mcu_ws_ip__project_id": 1,                                    
+            "gf180mcu_ws_ip__qrcode_id": 1,                                     
+            "gf180mcu_ws_ip__shuttle_id": 1,                                    
+            "meme": 1,                                                          
+            "meme_puf_bank": 1,                                                 
+            "puf_routes": 1                                                     
+         }                                                                      
+      }                                                                         
+   },                                                                           
+      "design": {                                                               
+         "num_wires":         453,                                              
+         "num_wire_bits":     504,                                              
+         "num_pub_wires":     83,                                               
+         "num_pub_wire_bits": 134,                                              
+         "num_ports":         5,                                                
+         "num_port_bits":     56,                                               
+         "num_memories":      0,                                                
+         "num_memory_bits":   0,                                                
+         "num_processes":     0,                                                
+         "num_cells":         475,                                              
+         "num_submodules":       0,                                             
+         "area":              1895564.832000,                                   
+         "sequential_area":    1655.180800,                                     
+         "num_cells_by_type": {                                                 
+            "gf180mcu_fd_io__asig_5p0": 4,                                      
+            "gf180mcu_fd_io__bi_24t": 46,                                       
+            "gf180mcu_fd_io__dvdd": 8,                                          
+            "gf180mcu_fd_io__dvss": 8,                                          
+            "gf180mcu_fd_io__in_c": 5,                                          
+            "gf180mcu_fd_io__in_s": 1,                                          
+            "gf180mcu_fd_sc_mcu7t5v0__and2_1": 6,                               
+            "gf180mcu_fd_sc_mcu7t5v0__and3_1": 4,                               
+            "gf180mcu_fd_sc_mcu7t5v0__and4_1": 1,                               
+            "gf180mcu_fd_sc_mcu7t5v0__aoi211_1": 4,                             
+            "gf180mcu_fd_sc_mcu7t5v0__aoi21_1": 14,                             
+            "gf180mcu_fd_sc_mcu7t5v0__clkinv_1": 8,                             
+            "gf180mcu_fd_sc_mcu7t5v0__dffq_1": 26,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nand2_1": 3,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nand3_1": 4,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nand4_1": 3,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nor2_1": 11,                              
+            "gf180mcu_fd_sc_mcu7t5v0__nor3_1": 8,                               
+            "gf180mcu_fd_sc_mcu7t5v0__nor4_1": 2,                               
+            "gf180mcu_fd_sc_mcu7t5v0__oai21_1": 10,                             
+            "gf180mcu_fd_sc_mcu7t5v0__or2_1": 1,                                
+            "gf180mcu_fd_sc_mcu7t5v0__tieh": 46,                                
+            "gf180mcu_fd_sc_mcu7t5v0__tiel": 242,                               
+            "gf180mcu_fd_sc_mcu7t5v0__xnor2_1": 2,                              
+            "gf180mcu_fd_sc_mcu7t5v0__xor2_1": 1,                               
+            "gf180mcu_ws_ip__marker": 1,                                        
+            "gf180mcu_ws_ip__project_id": 1,                                    
+            "gf180mcu_ws_ip__qrcode_id": 1,                                     
+            "gf180mcu_ws_ip__shuttle_id": 1,                                    
+            "meme": 1,                                                          
+            "meme_puf_bank": 1,                                                 
+            "puf_routes": 1                                                     
+         }                                                                      
+      }                                                                         
+}                                                                               
+                                                                                
+111. Printing statistics.                                                       
+                                                                                
+=== chip_top ===                                                                
+                                                                                
+        +----------Local Count, excluding submodules.                           
+        |        +-Local Area, excluding submodules.                            
+        |        |                                                              
+      453        - wires                                                        
+      504        - wire bits                                                    
+       83        - public wires                                                 
+      134        - public wire bits                                             
+        5        - ports                                                        
+       56        - port bits                                                    
+      475  1.9E+06 cells                                                        
+        4   105000   gf180mcu_fd_io__asig_5p0                                   
+       46  1207500   gf180mcu_fd_io__bi_24t                                     
+        8   210000   gf180mcu_fd_io__dvdd                                       
+        8   210000   gf180mcu_fd_io__dvss                                       
+        5   131250   gf180mcu_fd_io__in_c                                       
+        1    26250   gf180mcu_fd_io__in_s                                       
+        6   105.37   gf180mcu_fd_sc_mcu7t5v0__and2_1                            
+        4   87.808   gf180mcu_fd_sc_mcu7t5v0__and3_1                            
+        1   24.147   gf180mcu_fd_sc_mcu7t5v0__and4_1                            
+        4   87.808   gf180mcu_fd_sc_mcu7t5v0__aoi211_1                          
+       14  245.862   gf180mcu_fd_sc_mcu7t5v0__aoi21_1                           
+        8   70.246   gf180mcu_fd_sc_mcu7t5v0__clkinv_1                          
+       26 1.66E+03   gf180mcu_fd_sc_mcu7t5v0__dffq_1                            
+        3   32.928   gf180mcu_fd_sc_mcu7t5v0__nand2_1                           
+        4   61.466   gf180mcu_fd_sc_mcu7t5v0__nand3_1                           
+        3    59.27   gf180mcu_fd_sc_mcu7t5v0__nand4_1                           
+       11  144.883   gf180mcu_fd_sc_mcu7t5v0__nor2_1                            
+        8  140.493   gf180mcu_fd_sc_mcu7t5v0__nor3_1                            
+        2   43.904   gf180mcu_fd_sc_mcu7t5v0__nor4_1                            
+       10  175.616   gf180mcu_fd_sc_mcu7t5v0__oai21_1                           
+        1   17.562   gf180mcu_fd_sc_mcu7t5v0__or2_1                             
+       46  403.917   gf180mcu_fd_sc_mcu7t5v0__tieh                              
+      242 2.12E+03   gf180mcu_fd_sc_mcu7t5v0__tiel                              
+        2   57.075   gf180mcu_fd_sc_mcu7t5v0__xnor2_1                           
+        1   26.342   gf180mcu_fd_sc_mcu7t5v0__xor2_1                            
+        1        -   gf180mcu_ws_ip__marker                                     
+        1        -   gf180mcu_ws_ip__project_id                                 
+        1        -   gf180mcu_ws_ip__qrcode_id                                  
+        1        -   gf180mcu_ws_ip__shuttle_id                                 
+        1        -   meme                                                       
+        1        -   meme_puf_bank                                              
+        1        -   puf_routes                                                 
+                                                                                
+   Area for cell type \gf180mcu_ws_ip__qrcode_id is unknown!                    
+   Area for cell type \gf180mcu_ws_ip__shuttle_id is unknown!                   
+   Area for cell type \gf180mcu_ws_ip__project_id is unknown!                   
+   Area for cell type \gf180mcu_ws_ip__marker is unknown!                       
+   Area for cell type \meme is unknown!                                         
+   Area for cell type \meme_puf_bank is unknown!                                
+   Area for cell type \puf_routes is unknown!                                   
+                                                                                
+   Chip area for module '\chip_top': 1895564.832000                             
+     of which used for sequential elements: 1655.180800 (0.09%)                 
+                                                                                
+112. Executing Verilog backend.                                                 
+Dumping module `\chip_top'.                                                     
+                                                                                
+113. Executing JSON backend.                                                    
+[04:43:36] VERBOSE  Parsing synthesis checks…                       pyosys.py:59
+──────────────────────────── Unmapped Cells Checker ────────────────────────────
+[04:43:36] VERBOSE  Running 'Checker.YosysUnmappedCells' at         step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/07-chec             
+                    ker-yosysunmappedcells'…                                    
+[04:43:37] INFO     Check for Unmapped Yosys instances clear.     checker.py:131
+────────────────────────────── Yosys Synth Checks ──────────────────────────────
+[04:43:37] VERBOSE  Running 'Checker.YosysSynthChecks' at           step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/08-chec             
+                    ker-yosyssynthchecks'…                                      
+[04:43:37] INFO     Check for Yosys check errors clear.           checker.py:131
+─────────────────────── Netlist Assign Statement Checker ───────────────────────
+[04:43:38] VERBOSE  Running 'Checker.NetlistAssignStatements' at    step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/09-chec             
+                    ker-netlistassignstatements'…                               
+─────────────────────────────── Check SDC Files ────────────────────────────────
+[04:43:38] VERBOSE  Running 'OpenROAD.CheckSDCFiles' at             step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/10-open             
+                    road-checksdcfiles'…                                        
+──────────────────────────── Check Macro Instances ─────────────────────────────
+[04:43:39] VERBOSE  Running 'OpenROAD.CheckMacroInstances' at       step.py:1138
+                    'librelane/runs/RUN_2026-07-14_04-43-23/11-open             
+                    road-checkmacroinstances'…                                  
+[04:43:39] VERBOSE  Logging subprocess to                           step.py:1338
+                    'librelane/runs/RUN_2026-07-14_04-43-23/11-open             
+                    road-checkmacroinstances/openroad-checkmacroins             
+                    tances.log'…                                                
++ define_corners nom_tt_025C_5v00                                               
+Reading timing models for corner nom_tt_025C_5v00…                              
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/pdk/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__tt
+_025C_5v00.lib'…                                                                
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/pdk/gf180mcuD/libs.ref/gf180mcu_fd_io/lib/gf180mcu_fd_io__tt_025C_5v00.lib'…  
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/gf180mcu_ws_ip__qrcode_id/lib/gf180mcu_ws_ip__qrcode_id.lib'…         
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/gf180mcu_ws_ip__shuttle_id/lib/gf180mcu_ws_ip__shuttle_id.lib'…       
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/gf180mcu_ws_ip__project_id/lib/gf180mcu_ws_ip__project_id.lib'…       
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/gf180mcu_ws_ip__marker/lib/gf180mcu_ws_ip__marker.lib'…               
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/meme/lib/meme.lib'…                                                   
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/meme_puf/lib/meme_puf_bank.lib'…                                      
+Reading cell library for the 'nom_tt_025C_5v00' corner at                       
+'/work/ip/meme_puf/lib/puf_routes.lib'…                                         
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1, input_threshold_pct_rise  
+not found.                                                                      
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1, output_threshold_pct_rise 
+not found.                                                                      
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1,                           
+slew_lower_threshold_pct_rise not found.                                        
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1,                           
+slew_upper_threshold_pct_rise not found.                                        
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1, input_threshold_pct_fall  
+not found.                                                                      
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1, output_threshold_pct_fall 
+not found.                                                                      
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1,                           
+slew_lower_threshold_pct_fall not found.                                        
+Warning: /work/ip/meme_puf/lib/puf_routes.lib line 1,                           
+slew_upper_threshold_pct_fall not found.                                        
+Error: /work/ip/meme_puf/lib/puf_routes.lib line 1, Library puf_routes is       
+missing one or more thresholds.                                                 
+Chip' - Stage 11 - Check Macro Instances ━━━                       10/83 0:00:17
+[04:43:40] WARNING  The following warnings were generated by the     flow.py:699
+                    flow:                                                       
+[04:43:40] WARNING  [Checker.LintWarnings] 1 Lint warnings found.    flow.py:701
+[04:43:40] ERROR    The flow has encountered an unexpected       __main__.py:185
+                    error:                                                      
+                    OpenROAD.CheckMacroInstances failed with an                 
+                    unexpected error. Please check                              
+                    'librelane/runs/RUN_2026-07-14_04-43-23/11-o                
+                    penroad-checkmacroinstances/openroad-checkma                
+                    croinstances.log' and unless you wrote the                  
+                    step yourself, file an issue.                               
+                    Last 10 lines:                                              
+                            Reading cell library for the                        
+                    'nom_tt_025C_5v00' corner at                                
+                    '/work/ip/meme_puf/lib/puf_routes.lib'…                     
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    input_threshold_pct_rise not found.                         
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    output_threshold_pct_rise not found.                        
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    slew_lower_threshold_pct_rise not found.                    
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    slew_upper_threshold_pct_rise not found.                    
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    input_threshold_pct_fall not found.                         
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    output_threshold_pct_fall not found.                        
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    slew_lower_threshold_pct_fall not found.                    
+                            Warning:                                            
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    slew_upper_threshold_pct_fall not found.                    
+                            Error:                                              
+                    /work/ip/meme_puf/lib/puf_routes.lib line 1,                
+                    Library puf_routes is missing one or more                   
+                    thresholds.                                                 
+                                                                                
+[04:43:40] ERROR    LibreLane will now quit.                     __main__.py:186
+

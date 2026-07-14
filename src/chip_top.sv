@@ -272,17 +272,27 @@ module chip_top #(
     (* keep *) meme meme_i ();
 
     // --- analog-PUF NFT fingerprint (single-bank proof) ---
-    // Passive ppolyf_u resistor divider (ip/meme_puf). Force a voltage across
-    // HI/LO on two analog pads; read the tap voltages t1..t3 on three left-edge
-    // input pads (hi-Z, no pulls) with a bench meter. The per-die poly mismatch
-    // is the unclonable fingerprint. Blackbox for the flow (LVS-excluded); its
-    // terminals just tie onto the existing pad bond nets. See ip/meme_puf/.
+    // Passive ppolyf_u resistor divider (ip/meme_puf), all four terminals on
+    // the left-edge ANALOG pads (asig_5p0 is a feed-through: its terminal is
+    // reachable at the core-facing edge; in_c's PAD terminal is bond-side
+    // only, so input pads are NOT strapable). Force across HI/LO, read taps
+    // t1/t2 ratiometrically with a bench meter -- per-die poly mismatch is the
+    // unclonable fingerprint. The pad nets are SPECIAL (router skips them), so
+    // the physical connection is pre-drawn metal in the puf_routes macro below.
     (* keep *) meme_puf_bank puf_i (
         .HI (analog_PAD[0]),
-        .LO (analog_PAD[1]),
-        .t1 (input_PAD[0]),
-        .t2 (input_PAD[1]),
-        .t3 (input_PAD[2])
+        .t1 (analog_PAD[1]),
+        .t2 (analog_PAD[2]),
+        .LO (analog_PAD[3])
+    );
+
+    // pad<->bank straps (pre-drawn copper exposed as macro pins so abstract
+    // extraction sees the merge; see gen_routes.py)
+    (* keep *) puf_routes routes_i (
+        .HI (analog_PAD[0]),
+        .t1 (analog_PAD[1]),
+        .t2 (analog_PAD[2]),
+        .LO (analog_PAD[3])
     );
 
 endmodule

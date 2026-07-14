@@ -5,7 +5,13 @@ CORE_AREA: [442, 442, 3490, 2089]
 
 VERILOG_DEFINES: ["SLOT_1X0P5"]
 
-# Specify the pad instances for the padring
+# Specify the pad instances for the padring.
+# meme/PUF allocation (0 input / 4 bidir / 50 analog): slot POSITIONS are
+# unchanged from the original ring (same counts per side), only types swap.
+# analog[0]=Vhi force rail, analog[1]=Vlo force rail (west, lowest two);
+# analog[2..49] = 48 hi-Z fingerprint taps; bidir[0..3] = heartbeat blinkers
+# (bottom-left, next to clk/rst). Tap->cluster map lives in chip_top.sv and
+# ip/meme_puf/script/gen_routes_all.py.
 PAD_SOUTH: [
     clk_pad,
     rst_n_pad,
@@ -17,72 +23,72 @@ PAD_SOUTH: [
 
     "bidir\\[2\\].pad",
     "bidir\\[3\\].pad",
-    "bidir\\[4\\].pad",
-    "bidir\\[5\\].pad",
-    "bidir\\[6\\].pad",
-    "bidir\\[7\\].pad",
-    "bidir\\[8\\].pad",
-    "bidir\\[9\\].pad",
-    "bidir\\[10\\].pad",
-    "bidir\\[11\\].pad",
-    "bidir\\[12\\].pad",
-    "bidir\\[13\\].pad",
+    "analog\\[8\\].pad",
+    "analog\\[9\\].pad",
+    "analog\\[10\\].pad",
+    "analog\\[11\\].pad",
+    "analog\\[12\\].pad",
+    "analog\\[13\\].pad",
+    "analog\\[14\\].pad",
+    "analog\\[15\\].pad",
+    "analog\\[16\\].pad",
+    "analog\\[17\\].pad",
 
     "dvss_pads\\[1\\].pad",
     "dvdd_pads\\[1\\].pad",
-    
-    "bidir\\[14\\].pad",
-    "bidir\\[15\\].pad",
-    "bidir\\[16\\].pad",
-    "bidir\\[17\\].pad"
+
+    "analog\\[18\\].pad",
+    "analog\\[19\\].pad",
+    "analog\\[20\\].pad",
+    "analog\\[21\\].pad"
 ]
 
 PAD_EAST: [
     "dvss_pads\\[2\\].pad",
     "dvdd_pads\\[2\\].pad",
 
-    "bidir\\[18\\].pad",
-    "bidir\\[19\\].pad",
-    "bidir\\[20\\].pad",
-    "bidir\\[21\\].pad",
-    "bidir\\[22\\].pad",
-    "bidir\\[23\\].pad",
-    "bidir\\[24\\].pad",
-    "bidir\\[25\\].pad",
+    "analog\\[22\\].pad",
+    "analog\\[23\\].pad",
+    "analog\\[24\\].pad",
+    "analog\\[25\\].pad",
+    "analog\\[26\\].pad",
+    "analog\\[27\\].pad",
+    "analog\\[28\\].pad",
+    "analog\\[29\\].pad",
 
     "dvss_pads\\[3\\].pad",
     "dvdd_pads\\[3\\].pad"
 ]
 
 PAD_NORTH: [
-    "bidir\\[45\\].pad",
-    "bidir\\[44\\].pad",
-    "bidir\\[43\\].pad",
-    "bidir\\[42\\].pad",
-    
+    "analog\\[30\\].pad",
+    "analog\\[31\\].pad",
+    "analog\\[32\\].pad",
+    "analog\\[33\\].pad",
+
     "dvss_pads\\[5\\].pad",
     "dvdd_pads\\[5\\].pad",
 
-    "bidir\\[41\\].pad",
-    "bidir\\[40\\].pad",
-    "bidir\\[39\\].pad",
-    "bidir\\[38\\].pad",
-    "bidir\\[37\\].pad",
-    "bidir\\[36\\].pad",
-    "bidir\\[35\\].pad",
-    "bidir\\[34\\].pad",
-    "bidir\\[33\\].pad",
-    "bidir\\[32\\].pad",
-    "bidir\\[31\\].pad",
-    "bidir\\[30\\].pad",
+    "analog\\[34\\].pad",
+    "analog\\[35\\].pad",
+    "analog\\[36\\].pad",
+    "analog\\[37\\].pad",
+    "analog\\[38\\].pad",
+    "analog\\[39\\].pad",
+    "analog\\[40\\].pad",
+    "analog\\[41\\].pad",
+    "analog\\[42\\].pad",
+    "analog\\[43\\].pad",
+    "analog\\[44\\].pad",
+    "analog\\[45\\].pad",
 
     "dvss_pads\\[4\\].pad",
     "dvdd_pads\\[4\\].pad",
-    
-    "bidir\\[29\\].pad",
-    "bidir\\[28\\].pad",
-    "bidir\\[27\\].pad",
-    "bidir\\[26\\].pad"
+
+    "analog\\[46\\].pad",
+    "analog\\[47\\].pad",
+    "analog\\[48\\].pad",
+    "analog\\[49\\].pad"
 ]
 
 
@@ -90,16 +96,16 @@ PAD_WEST: [
     "vss_pads\\[0\\].pad",
     "vdd_pads\\[0\\].pad",
 
-    "inputs\\[3\\].pad",
-    "inputs\\[2\\].pad",
-    "inputs\\[1\\].pad",
-    "inputs\\[0\\].pad",
-    
-    "analog\\[3\\].pad",
-    "analog\\[2\\].pad",
-    "analog\\[1\\].pad",
     "analog\\[0\\].pad",
-    
+    "analog\\[1\\].pad",
+    "analog\\[2\\].pad",
+    "analog\\[3\\].pad",
+
+    "analog\\[4\\].pad",
+    "analog\\[5\\].pad",
+    "analog\\[6\\].pad",
+    "analog\\[7\\].pad",
+
     "dvss_pads\\[6\\].pad",
     "dvdd_pads\\[6\\].pad"
 ]

@@ -1,0 +1,5 @@
+* meme_puf_bank2 -- analog-PUF resistor bank, 2 x ppolyf_u (~350 ohm/sq) in series
+.subckt meme_puf_bank2 HI t1 LO VSUB
+XR0 HI t1 VSUB ppolyf_u r_width=0.8u r_length=8.0u
+XR1 t1 LO VSUB ppolyf_u r_width=0.8u r_length=8.0u
+.ends meme_puf_bank2

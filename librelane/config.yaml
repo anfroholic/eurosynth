@@ -62,7 +62,9 @@ IGNORE_DISCONNECTED_MODULES:
 - gf180mcu_ws_ip__project_id
 - gf180mcu_ws_ip__marker
 - meme
-- meme_puf_bank
+- meme_puf_cluster
+- meme_puf_cluster_e
+- puf_blocker
 - puf_routes
 
 # Clock

@@ -56,7 +56,6 @@ module chip_top #(
     inout  wire clk_PAD,
     inout  wire rst_n_PAD,
     
-    inout  wire [NUM_INPUT_PADS-1:0] input_PAD,
     inout  wire [NUM_BIDIR_PADS-1:0] bidir_PAD,
     
     inout  wire [NUM_ANALOG_PADS-1:0] analog_PAD
@@ -65,10 +64,6 @@ module chip_top #(
     wire clk_PAD2CORE;
     wire rst_n_PAD2CORE;
     
-    wire [NUM_INPUT_PADS-1:0] input_PAD2CORE;
-    wire [NUM_INPUT_PADS-1:0] input_CORE2PAD_PU;
-    wire [NUM_INPUT_PADS-1:0] input_CORE2PAD_PD;
-
     wire [NUM_BIDIR_PADS-1:0] bidir_PAD2CORE;
     wire [NUM_BIDIR_PADS-1:0] bidir_CORE2PAD;
     wire [NUM_BIDIR_PADS-1:0] bidir_CORE2PAD_OE;
@@ -170,26 +165,6 @@ module chip_top #(
     );
 
     generate
-    for (genvar i=0; i<NUM_INPUT_PADS; i++) begin : inputs
-        (* keep *)
-        `gf180mcu_xxx_io__in_c pad (
-            `ifdef USE_POWER_PINS
-            .DVDD   (DVDD),
-            .DVSS   (DVSS),
-            .VDD    (VDD),
-            .VSS    (VSS),
-            `endif
-        
-            .Y      (input_PAD2CORE[i]),
-            .PAD    (input_PAD[i]),
-            
-            .PU     (input_CORE2PAD_PU[i]),
-            .PD     (input_CORE2PAD_PD[i])
-        );
-    end
-    endgenerate
-
-    generate
     for (genvar i=0; i<NUM_BIDIR_PADS; i++) begin : bidir
         (* keep *)
         `gf180mcu_xxx_io__bi_24t pad (
@@ -233,7 +208,6 @@ module chip_top #(
     // Core design
 
     chip_core #(
-        .NUM_INPUT_PADS  (NUM_INPUT_PADS),
         .NUM_BIDIR_PADS  (NUM_BIDIR_PADS),
         .NUM_ANALOG_PADS (NUM_ANALOG_PADS)
     ) i_chip_core (
@@ -244,10 +218,6 @@ module chip_top #(
     
         .clk        (clk_PAD2CORE),
         .rst_n      (rst_n_PAD2CORE),
-    
-        .input_in   (input_PAD2CORE),
-        .input_pu   (input_CORE2PAD_PU),
-        .input_pd   (input_CORE2PAD_PD),
 
         .bidir_in   (bidir_PAD2CORE),
         .bidir_out  (bidir_CORE2PAD),
@@ -271,28 +241,75 @@ module chip_top #(
     // Fills the whole core; see librelane/macros/macros_5v.yaml + ip/meme.
     (* keep *) meme meme_i ();
 
-    // --- analog-PUF NFT fingerprint (single-bank proof) ---
-    // Passive ppolyf_u resistor divider (ip/meme_puf), all four terminals on
-    // the left-edge ANALOG pads (asig_5p0 is a feed-through: its terminal is
-    // reachable at the core-facing edge; in_c's PAD terminal is bond-side
-    // only, so input pads are NOT strapable). Force across HI/LO, read taps
-    // t1/t2 ratiometrically with a bench meter -- per-die poly mismatch is the
-    // unclonable fingerprint. The pad nets are SPECIAL (router skips them), so
-    // the physical connection is pre-drawn metal in the puf_routes macro below.
-    (* keep *) meme_puf_bank puf_i (
-        .HI (analog_PAD[0]),
-        .t1 (analog_PAD[1]),
-        .t2 (analog_PAD[2]),
-        .LO (analog_PAD[3])
+    // row-killing band blockers where the PUF branch bundles cross the
+    // std-cell side strips beside the art: pdngen can't strap those rows
+    // (PDN-0179). See ip/meme_puf/script/gen_blocker.py for the geometry.
+    (* keep *) puf_blocker blocker_w1 ();
+    (* keep *) puf_blocker blocker_w2 ();
+    (* keep *) puf_blocker blocker_e5 ();
+    (* keep *) puf_blocker blocker_e6 ();
+    (* keep *) puf_blocker blocker_e4 ();
+    (* keep *) puf_blocker blocker_e3 ();
+
+    // --- analog-PUF NFT fingerprint (48-tap scale-up) ---
+    // 48 identical passive ppolyf_u dividers (2 series resistors, 1 tap) in
+    // 6 clusters of 8, hidden inside the doge's dogecoin medallions (keepouts
+    // carved by ip/meme/script/carve_puf.py, geometry in ip/meme/puf_spec.json).
+    // analog_PAD[0]=Vhi / analog_PAD[1]=Vlo force rails; analog_PAD[2..49] =
+    // hi-Z taps (tap k = analog_PAD[k+2]). Force across the rails, meter each
+    // tap: per-die poly mismatch is the unclonable fingerprint. All pad nets
+    // are SPECIAL (router skips them), so every connection is pre-drawn copper
+    // in the puf_routes macro (LEF PINs + M5 bond tabs -- proven in the
+    // single-bank round-4 LVS). Tap->cluster map matches gen_routes_all.py.
+    (* keep *) meme_puf_cluster puf_r1 (
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[2]),  .t1 (analog_PAD[3]),  .t2 (analog_PAD[4]),  .t3 (analog_PAD[5]),
+        .t4 (analog_PAD[8]),  .t5 (analog_PAD[9]),  .t6 (analog_PAD[10]), .t7 (analog_PAD[11])
+    );
+    (* keep *) meme_puf_cluster puf_r2 (
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[6]),  .t1 (analog_PAD[7]),  .t2 (analog_PAD[12]), .t3 (analog_PAD[13]),
+        .t4 (analog_PAD[14]), .t5 (analog_PAD[15]), .t6 (analog_PAD[16]), .t7 (analog_PAD[17])
+    );
+    // R3..R6 use the pre-mirrored east cell (pins east edge, placed N --
+    // FN of a dummy-SIZE macro flips about the wrong box, see gen_cluster.py)
+    (* keep *) meme_puf_cluster_e puf_r5 (
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[18]), .t1 (analog_PAD[19]), .t2 (analog_PAD[20]), .t3 (analog_PAD[21]),
+        .t4 (analog_PAD[22]), .t5 (analog_PAD[23]), .t6 (analog_PAD[24]), .t7 (analog_PAD[25])
+    );
+    (* keep *) meme_puf_cluster_e puf_r4 (
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[26]), .t1 (analog_PAD[27]), .t2 (analog_PAD[28]), .t3 (analog_PAD[29]),
+        .t4 (analog_PAD[49]), .t5 (analog_PAD[48]), .t6 (analog_PAD[47]), .t7 (analog_PAD[46])
+    );
+    (* keep *) meme_puf_cluster_e puf_r3 (
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[38]), .t1 (analog_PAD[39]), .t2 (analog_PAD[40]), .t3 (analog_PAD[41]),
+        .t4 (analog_PAD[42]), .t5 (analog_PAD[43]), .t6 (analog_PAD[44]), .t7 (analog_PAD[45])
+    );
+    (* keep *) meme_puf_cluster_e puf_r6 (
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[30]), .t1 (analog_PAD[31]), .t2 (analog_PAD[32]), .t3 (analog_PAD[33]),
+        .t4 (analog_PAD[34]), .t5 (analog_PAD[35]), .t6 (analog_PAD[36]), .t7 (analog_PAD[37])
     );
 
-    // pad<->bank straps (pre-drawn copper exposed as macro pins so abstract
-    // extraction sees the merge; see gen_routes.py)
+    // pad<->cluster straps: die-wide pre-drawn copper (M5 bond tabs, corridor
+    // lanes, channel runs); LEF PINs so abstract extraction merges the nets.
     (* keep *) puf_routes routes_i (
-        .HI (analog_PAD[0]),
-        .t1 (analog_PAD[1]),
-        .t2 (analog_PAD[2]),
-        .LO (analog_PAD[3])
+        .HI (analog_PAD[0]), .LO (analog_PAD[1]),
+        .t0 (analog_PAD[2]),  .t1 (analog_PAD[3]),  .t2 (analog_PAD[4]),  .t3 (analog_PAD[5]),
+        .t4 (analog_PAD[6]),  .t5 (analog_PAD[7]),  .t6 (analog_PAD[8]),  .t7 (analog_PAD[9]),
+        .t8 (analog_PAD[10]), .t9 (analog_PAD[11]), .t10(analog_PAD[12]), .t11(analog_PAD[13]),
+        .t12(analog_PAD[14]), .t13(analog_PAD[15]), .t14(analog_PAD[16]), .t15(analog_PAD[17]),
+        .t16(analog_PAD[18]), .t17(analog_PAD[19]), .t18(analog_PAD[20]), .t19(analog_PAD[21]),
+        .t20(analog_PAD[22]), .t21(analog_PAD[23]), .t22(analog_PAD[24]), .t23(analog_PAD[25]),
+        .t24(analog_PAD[26]), .t25(analog_PAD[27]), .t26(analog_PAD[28]), .t27(analog_PAD[29]),
+        .t28(analog_PAD[30]), .t29(analog_PAD[31]), .t30(analog_PAD[32]), .t31(analog_PAD[33]),
+        .t32(analog_PAD[34]), .t33(analog_PAD[35]), .t34(analog_PAD[36]), .t35(analog_PAD[37]),
+        .t36(analog_PAD[38]), .t37(analog_PAD[39]), .t38(analog_PAD[40]), .t39(analog_PAD[41]),
+        .t40(analog_PAD[42]), .t41(analog_PAD[43]), .t42(analog_PAD[44]), .t43(analog_PAD[45]),
+        .t44(analog_PAD[46]), .t45(analog_PAD[47]), .t46(analog_PAD[48]), .t47(analog_PAD[49])
     );
 
 endmodule

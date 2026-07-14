@@ -1,0 +1,15 @@
+library (meme_puf_bank2) {
+  input_threshold_pct_fall: 50.0;
+  input_threshold_pct_rise: 50.0;
+  output_threshold_pct_fall: 50.0;
+  output_threshold_pct_rise: 50.0;
+  slew_lower_threshold_pct_fall: 20.0;
+  slew_lower_threshold_pct_rise: 20.0;
+  slew_upper_threshold_pct_fall: 80.0;
+  slew_upper_threshold_pct_rise: 80.0;
+  cell (meme_puf_bank2) {
+    pin (HI) { direction: inout; }
+    pin (t1) { direction: inout; }
+    pin (LO) { direction: inout; }
+  }
+}

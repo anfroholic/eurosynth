@@ -1,0 +1,15 @@
+VERSION 5.7 ;
+  NOWIREEXTENSIONATPIN ON ;
+  DIVIDERCHAR "/" ;
+  BUSBITCHARS "[]" ;
+MACRO puf_blocker
+  CLASS BLOCK ;
+  FOREIGN puf_blocker ;
+  ORIGIN 0.000 0.000 ;
+  SIZE 129.000 BY 48.000 ;
+  OBS
+      LAYER Metal1 ;
+        RECT 0.000 0.000 129.000 48.000 ;
+  END
+END puf_blocker
+END LIBRARY

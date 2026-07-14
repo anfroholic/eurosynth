@@ -33,6 +33,7 @@ art:
 	  --line-width $(LINE_WIDTH) \
 	  --foreground $(FOREGROUND) --boundary $(BOUNDARY)
 	python3 script/add_poly_fill.py gds/$(CELL).gds
+	python3 script/carve_gds.py
 .PHONY: art
 
 drc:

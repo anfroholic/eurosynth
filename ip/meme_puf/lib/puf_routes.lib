@@ -7,11 +7,56 @@ library (puf_routes) {
   slew_lower_threshold_pct_rise: 20.0;
   slew_upper_threshold_pct_fall: 80.0;
   slew_upper_threshold_pct_rise: 80.0;
-
   cell (puf_routes) {
     pin (HI) { direction: inout; }
+    pin (LO) { direction: inout; }
+    pin (t0) { direction: inout; }
     pin (t1) { direction: inout; }
     pin (t2) { direction: inout; }
-    pin (LO) { direction: inout; }
+    pin (t3) { direction: inout; }
+    pin (t4) { direction: inout; }
+    pin (t5) { direction: inout; }
+    pin (t6) { direction: inout; }
+    pin (t7) { direction: inout; }
+    pin (t8) { direction: inout; }
+    pin (t9) { direction: inout; }
+    pin (t10) { direction: inout; }
+    pin (t11) { direction: inout; }
+    pin (t12) { direction: inout; }
+    pin (t13) { direction: inout; }
+    pin (t14) { direction: inout; }
+    pin (t15) { direction: inout; }
+    pin (t16) { direction: inout; }
+    pin (t17) { direction: inout; }
+    pin (t18) { direction: inout; }
+    pin (t19) { direction: inout; }
+    pin (t20) { direction: inout; }
+    pin (t21) { direction: inout; }
+    pin (t22) { direction: inout; }
+    pin (t23) { direction: inout; }
+    pin (t24) { direction: inout; }
+    pin (t25) { direction: inout; }
+    pin (t26) { direction: inout; }
+    pin (t27) { direction: inout; }
+    pin (t28) { direction: inout; }
+    pin (t29) { direction: inout; }
+    pin (t30) { direction: inout; }
+    pin (t31) { direction: inout; }
+    pin (t32) { direction: inout; }
+    pin (t33) { direction: inout; }
+    pin (t34) { direction: inout; }
+    pin (t35) { direction: inout; }
+    pin (t36) { direction: inout; }
+    pin (t37) { direction: inout; }
+    pin (t38) { direction: inout; }
+    pin (t39) { direction: inout; }
+    pin (t40) { direction: inout; }
+    pin (t41) { direction: inout; }
+    pin (t42) { direction: inout; }
+    pin (t43) { direction: inout; }
+    pin (t44) { direction: inout; }
+    pin (t45) { direction: inout; }
+    pin (t46) { direction: inout; }
+    pin (t47) { direction: inout; }
   }
 }

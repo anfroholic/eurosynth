@@ -39,10 +39,11 @@
 `define NUM_VDD_PADS 1
 `define NUM_VSS_PADS 1
 
-// Signal pads
-`define NUM_INPUT_PADS 4
-`define NUM_BIDIR_PADS 46
-`define NUM_ANALOG_PADS 4
+// Signal pads (meme/PUF allocation: 4 heartbeat blinkers + 50 analog =
+// 2 PUF force rails + 48 hi-Z fingerprint taps; no input pads)
+`define NUM_INPUT_PADS 0
+`define NUM_BIDIR_PADS 4
+`define NUM_ANALOG_PADS 50
 
 `endif
 

@@ -7,9 +7,9 @@
 //
 //   - every bidir pad is an OUTPUT (oe=1, ie=0) driving a tap of the counter,
 //     so each pad toggles at clk / 2^(1 + bit index % 26);
-//   - bidir_out[3] keeps the original heartbeat role (~0.4 Hz LED blink at
-//     25 MHz) -- the chip is alive, much wow;
-//   - input pads are unused (no pulls), analog pads untouched.
+//   - the 4 blinkers map to the TOP counter bits (0.37/0.75/1.5/3 Hz at
+//     25 MHz) so all four visibly blink -- the chip is alive, much wow;
+//   - analog pads are untouched here (the PUF is passive; see chip_top).
 //
 // rst_n stays the global synchronous init it always was (see the reset
 // false_path rationale in librelane/chip_top.sdc).
@@ -20,7 +20,6 @@ module chip_core #(
     // Defaults are placeholders only; chip_top always overrides all three
     // explicitly. Names/order unchanged so the template's instantiation still
     // matches; -g2012 requires a default in the ANSI parameter port list.
-    parameter NUM_INPUT_PADS  = 1,
     parameter NUM_BIDIR_PADS  = 32,
     parameter NUM_ANALOG_PADS = 1
     )(
@@ -31,10 +30,6 @@ module chip_core #(
 
     input  wire clk,
     input  wire rst_n,
-
-    input  wire [NUM_INPUT_PADS-1:0] input_in,
-    output wire [NUM_INPUT_PADS-1:0] input_pu,
-    output wire [NUM_INPUT_PADS-1:0] input_pd,
 
     input  wire [NUM_BIDIR_PADS-1:0] bidir_in,
     output wire [NUM_BIDIR_PADS-1:0] bidir_out,
@@ -48,10 +43,6 @@ module chip_core #(
     inout  wire [NUM_ANALOG_PADS-1:0] analog
 );
 
-    // --- input pad config: unused, no pulls ---
-    assign input_pu = '0;
-    assign input_pd = '0;
-
     // --- the wow counter ---
     localparam WOW = 26;
     reg [WOW-1:0] wow;
@@ -64,7 +55,8 @@ module chip_core #(
     genvar bi;
     generate
         for (bi = 0; bi < NUM_BIDIR_PADS; bi++) begin : g_out
-            assign bidir_out[bi] = wow[bi % WOW];
+            // top bits: slow, human-visible blinking on every pad
+            assign bidir_out[bi] = wow[WOW - 1 - (bi % WOW)];
         end
     endgenerate
 
@@ -76,7 +68,7 @@ module chip_core #(
     assign bidir_pd = '0;
 
     // consume the unused inputs (pruned at synthesis; keeps lint quiet)
-    wire _unused_ok = &{1'b0, input_in, bidir_in};
+    wire _unused_ok = &{1'b0, bidir_in};
 
 endmodule
 

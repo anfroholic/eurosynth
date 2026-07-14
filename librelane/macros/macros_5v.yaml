@@ -86,32 +86,99 @@ MACROS:
         location: [571, 532]
         orientation: N
 
-  # ---- analog-PUF NFT fingerprint (single-bank proof) ----
-  # Passive ppolyf_u resistor divider (ip/meme_puf). Sits in the unobstructed
-  # left stdcell margin (core x[442,571]) at input/analog-pad height, so the 2
-  # force nets (analog pads) + 3 tap nets (input pads) route as short left-edge
-  # stubs -- no doge carve-out. Blackbox / LVS-excluded (see config.yaml).
-  meme_puf_bank:
+  # ---- analog-PUF NFT fingerprint (48 taps in 6 medallion clusters) ----
+  # Passive ppolyf_u resistor dividers (ip/meme_puf): 8 single-tap banks per
+  # cluster, carved into the medallion art (keepouts + 22um pin channels from
+  # ip/meme/puf_spec.json; exact GDS carve by ip/meme/script/carve_gds.py).
+  # Locations MUST match puf_spec.json and the tap map in chip_top.sv +
+  # gen_routes_all.py. R1/R2 use the normal cell (pins west edge); R3..R6 use
+  # the PRE-MIRRORED meme_puf_cluster_e cell (pins east edge) placed N: FN of
+  # a dummy-SIZE macro flips about the declared 10x10 box and displaces the
+  # true geometry 70.6um (round-7 LVS/DRC failure). Blackbox / LVS-excluded
+  # (see config.yaml).
+  meme_puf_cluster:
     gds:
-      - dir::../ip/meme_puf/gds/meme_puf_bank.gds
+      - dir::../ip/meme_puf/gds/meme_puf_cluster.gds
     lef:
-      - dir::../ip/meme_puf/lef/meme_puf_bank.lef
+      - dir::../ip/meme_puf/lef/meme_puf_cluster.lef
     vh:
-      - dir::../ip/meme_puf/vh/meme_puf_bank.v
+      - dir::../ip/meme_puf/vh/meme_puf_cluster.v
     lib:
       "*":
-        - dir::../ip/meme_puf/lib/meme_puf_bank.lib
+        - dir::../ip/meme_puf/lib/meme_puf_cluster.lib
     instances:
-      puf_i:
-        # left margin band, centred among the 4 analog pads (y 1298-1797)
-        location: [500, 1540]
+      puf_r1:
+        location: [679.7, 1113.25]
+        orientation: N
+      puf_r2:
+        location: [759.7, 1594.05]
         orientation: N
 
-  # Pre-drawn pad<->bank straps (see ip/meme_puf/script/gen_routes.py).
-  # Real copper merges analog_PAD[0..3] with the bank pins (the router can't:
-  # SPECIAL nets); exposed as LEF PINs + an M5 bond-pad tab per net because
-  # magic extraction runs in abstract (LEF) mode where OBS isn't conductive.
-  # Location MUST equal gen_routes.py ORIGIN.
+  meme_puf_cluster_e:
+    gds:
+      - dir::../ip/meme_puf/gds/meme_puf_cluster_e.gds
+    lef:
+      - dir::../ip/meme_puf/lef/meme_puf_cluster_e.lef
+    vh:
+      - dir::../ip/meme_puf/vh/meme_puf_cluster_e.v
+    lib:
+      "*":
+        - dir::../ip/meme_puf/lib/meme_puf_cluster_e.lib
+    instances:
+      puf_r3:
+        location: [3099.7, 1841.95]
+        orientation: N
+      puf_r4:
+        location: [3199.7, 1486.95]
+        orientation: N
+      puf_r5:
+        location: [3189.7, 680.25]
+        orientation: N
+      puf_r6:
+        location: [3139.7, 1129.55]
+        orientation: N
+
+  # Row-killing band blockers (129x48) over each std-cell band that a routes
+  # branch bundle crosses in the side strips beside the art: pdngen can't
+  # strap those rows (PDN-0179). Full-strip blockers make RePlAce diverge
+  # (GPL-0305), so only the 6 bands are killed. Positions must track the
+  # cluster branch ys -- see ip/meme_puf/script/gen_blocker.py.
+  # OBS is Metal1-only; M2+ stay routable.
+  puf_blocker:
+    gds:
+      - dir::../ip/meme_puf/gds/puf_blocker.gds
+    lef:
+      - dir::../ip/meme_puf/lef/puf_blocker.lef
+    vh:
+      - dir::../ip/meme_puf/vh/puf_blocker.v
+    lib:
+      "*":
+        - dir::../ip/meme_puf/lib/puf_blocker.lib
+    instances:
+      blocker_w1:
+        location: [442, 1113]
+        orientation: N
+      blocker_w2:
+        location: [442, 1595]
+        orientation: N
+      blocker_e5:
+        location: [3361, 682]
+        orientation: N
+      blocker_e6:
+        location: [3361, 1132]
+        orientation: N
+      blocker_e4:
+        location: [3361, 1489]
+        orientation: N
+      blocker_e3:
+        location: [3361, 1842]
+        orientation: N
+
+  # Pre-drawn pad<->cluster straps (see ip/meme_puf/script/gen_routes_all.py).
+  # Real copper merges all 50 analog pads with the cluster pins (the router
+  # can't: SPECIAL nets); exposed as LEF PINs + an M5 bond-pad tab per net
+  # because magic extraction runs in abstract (LEF) mode where OBS isn't
+  # conductive. Location MUST equal gen_routes_all.py ORIGIN.
   puf_routes:
     gds:
       - dir::../ip/meme_puf/gds/puf_routes.gds
@@ -124,5 +191,5 @@ MACROS:
         - dir::../ip/meme_puf/lib/puf_routes.lib
     instances:
       routes_i:
-        location: [43, 1290]
+        location: [43, 43]
         orientation: N

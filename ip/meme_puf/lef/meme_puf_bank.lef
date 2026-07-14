@@ -1,0 +1,51 @@
+VERSION 5.7 ;
+  NOWIREEXTENSIONATPIN ON ;
+  DIVIDERCHAR "/" ;
+  BUSBITCHARS "[]" ;
+MACRO meme_puf_bank
+  CLASS BLOCK ;
+  FOREIGN meme_puf_bank ;
+  ORIGIN 0.000 0.000 ;
+  SIZE 12.650 BY 13.450 ;
+  PIN HI
+    DIRECTION INOUT ;
+    USE ANALOG ;
+    PORT
+      LAYER Metal1 ;
+        RECT 1.570 3.100 2.570 4.100 ;
+    END
+  END HI
+  PIN t1
+    DIRECTION INOUT ;
+    USE ANALOG ;
+    PORT
+      LAYER Metal1 ;
+        RECT 10.430 3.100 11.430 6.300 ;
+    END
+  END t1
+  PIN t2
+    DIRECTION INOUT ;
+    USE ANALOG ;
+    PORT
+      LAYER Metal1 ;
+        RECT 1.570 5.300 2.570 8.500 ;
+    END
+  END t2
+  PIN t3
+    DIRECTION INOUT ;
+    USE ANALOG ;
+    PORT
+      LAYER Metal1 ;
+        RECT 10.430 7.500 11.430 10.700 ;
+    END
+  END t3
+  PIN LO
+    DIRECTION INOUT ;
+    USE ANALOG ;
+    PORT
+      LAYER Metal1 ;
+        RECT 1.570 9.700 2.570 10.700 ;
+    END
+  END LO
+END meme_puf_bank
+END LIBRARY

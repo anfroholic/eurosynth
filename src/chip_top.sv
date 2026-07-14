@@ -271,6 +271,20 @@ module chip_top #(
     // Fills the whole core; see librelane/macros/macros_5v.yaml + ip/meme.
     (* keep *) meme meme_i ();
 
+    // --- analog-PUF NFT fingerprint (single-bank proof) ---
+    // Passive ppolyf_u resistor divider (ip/meme_puf). Force a voltage across
+    // HI/LO on two analog pads; read the tap voltages t1..t3 on three left-edge
+    // input pads (hi-Z, no pulls) with a bench meter. The per-die poly mismatch
+    // is the unclonable fingerprint. Blackbox for the flow (LVS-excluded); its
+    // terminals just tie onto the existing pad bond nets. See ip/meme_puf/.
+    (* keep *) meme_puf_bank puf_i (
+        .HI (analog_PAD[0]),
+        .LO (analog_PAD[1]),
+        .t1 (input_PAD[0]),
+        .t2 (input_PAD[1]),
+        .t3 (input_PAD[2])
+    );
+
 endmodule
 
 `default_nettype wire

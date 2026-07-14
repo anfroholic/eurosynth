@@ -1,0 +1,13 @@
+* meme_puf -- analog-PUF resistor divider
+* Three identical unsalicided P+ poly resistors (ppolyf_u, ~350 ohm/sq) in
+* series:  A --[R1]-- T1 --[R2]-- T2 --[R3]-- B
+* Force across A/B, read taps T1 (~2/3) and T2 (~1/3). The nominal ratios cancel
+* global process + temperature; per-die local mismatch (the model's mc_rsh /
+* mis_r term) is the unclonable fingerprint.
+*
+* ppolyf_u ports: (r1 r2 bulk) ; bulk -> substrate/VSUB.
+.subckt meme_puf A T1 T2 B VSUB
+XR1 A  T1 VSUB ppolyf_u r_width=1u r_length=20u
+XR2 T1 T2 VSUB ppolyf_u r_width=1u r_length=20u
+XR3 T2 B  VSUB ppolyf_u r_width=1u r_length=20u
+.ends meme_puf

@@ -85,3 +85,23 @@ MACROS:
       meme_i:
         location: [571, 532]
         orientation: N
+
+  # ---- analog-PUF NFT fingerprint (single-bank proof) ----
+  # Passive ppolyf_u resistor divider (ip/meme_puf). Sits in the unobstructed
+  # left stdcell margin (core x[442,571]) at input/analog-pad height, so the 2
+  # force nets (analog pads) + 3 tap nets (input pads) route as short left-edge
+  # stubs -- no doge carve-out. Blackbox / LVS-excluded (see config.yaml).
+  meme_puf_bank:
+    gds:
+      - dir::../ip/meme_puf/gds/meme_puf_bank.gds
+    lef:
+      - dir::../ip/meme_puf/lef/meme_puf_bank.lef
+    vh:
+      - dir::../ip/meme_puf/vh/meme_puf_bank.v
+    lib:
+      "*":
+        - dir::../ip/meme_puf/lib/meme_puf_bank.lib
+    instances:
+      puf_i:
+        location: [480, 1000]
+        orientation: N

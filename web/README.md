@@ -23,6 +23,17 @@ The five voices and their controls:
 Each panel has **▶ Play** and **⬇ WAV** (downloads the exact clip as a 12 kHz mono
 WAV).
 
+## `rev2/` — the analog voice preview lab
+
+[`rev2/index.html`](rev2/index.html) is a second self-contained page previewing the
+**analog** voices proposed for the second chip
+([docs/REV2_ANALOG.md](../docs/REV2_ANALOG.md)). Unlike this page's bit-exact
+models, those are **behavioral floating-point circuit simulations** (expo VCO with
+drift, OTA-C SVF, tanh transistor/diode ladder, wavefolder, Gilbert-cell VCA/ring
+mod, noise, 808-style drums, BBD delay, Chua chaos, Lunetta drone, and the full
+VCO→folder→ladder→VCA chain) rendered at 24 kHz — an audition tool for choosing
+which voices earn die area, not a promise of the exact silicon sound.
+
 ## Run it
 
 It's one static file with no build step. Any static server works:

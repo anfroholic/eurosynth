@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EuroSynth Rev 2 — analog voice preview lab (PyScript)</title>
+
+<!-- PyScript 2026.3.1 (Pyodide / real CPython in WebAssembly) -->
+<link rel="stylesheet" href="https://pyscript.net/releases/2026.3.1/core.css" />
+<script type="module" src="https://pyscript.net/releases/2026.3.1/core.js"></script>
+
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c232d; --edge:#2b3340;
+    --ink:#e6edf3; --dim:#9aa7b4; --accent:#7ee787;
+    --accent2:#79c0ff; --warn:#f0883e; --bad:#ff7b72;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  header { padding:28px 22px 16px; max-width:1080px; margin:0 auto; }
+  h1 { margin:0 0 4px; font-size:26px; letter-spacing:.3px; }
+  h1 .chip { color:var(--accent); }
+  .sub { color:var(--dim); max-width:820px; }
+  .sub code { color:var(--accent2); background:#0b1018; padding:1px 5px; border-radius:4px; }
+  .sub b { color:var(--ink); }
+  main { max-width:1080px; margin:0 auto; padding:0 22px 80px;
+         display:grid; gap:18px; grid-template-columns:repeat(2,1fr); }
+  @media (max-width:760px){ main { grid-template-columns:1fr; } }
+  .voice {
+    background:var(--panel); border:1px solid var(--edge); border-radius:14px;
+    padding:16px 16px 14px; display:flex; flex-direction:column; gap:10px;
+  }
+  .voice h2 { margin:0; font-size:17px; display:flex; align-items:center; gap:9px; }
+  .num { font-size:12px; color:#0d1117; background:var(--accent); border-radius:6px;
+         padding:1px 7px; font-weight:700; }
+  .num.tb { background:var(--accent2); }
+  .num.tc { background:var(--warn); }
+  .blurb { color:var(--dim); font-size:13px; margin:-2px 0 4px; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .row label { min-width:84px; color:var(--dim); font-size:13px; }
+  input[type=range]{ flex:1; min-width:110px; accent-color:var(--accent); }
+  select, input[type=number] {
+    background:var(--panel2); color:var(--ink); border:1px solid var(--edge);
+    border-radius:7px; padding:5px 8px; font-size:13px;
+  }
+  .readout { font-variant-numeric:tabular-nums; color:var(--accent2);
+             min-width:96px; text-align:right; font-size:13px; }
+  .btns { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+  button {
+    background:var(--accent); color:#0d1117; border:0; border-radius:8px;
+    padding:8px 14px; font-weight:650; font-size:14px; cursor:pointer;
+  }
+  button:hover { filter:brightness(1.08); }
+  button.alt { background:var(--panel2); color:var(--ink); border:1px solid var(--edge); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .chk { display:flex; align-items:center; gap:6px; color:var(--dim); font-size:13px; }
+  .chk input { accent-color:var(--accent); }
+  #status {
+    position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+    background:#0b1018; border:1px solid var(--edge); border-radius:999px;
+    padding:8px 18px; color:var(--ink); font-size:13px; box-shadow:0 6px 24px #0008;
+    opacity:0; transition:opacity .15s; pointer-events:none; max-width:90vw;
+  }
+  #status.show { opacity:1; }
+  #status.busy { color:var(--warn); }
+  #status.err  { color:var(--bad); border-color:var(--bad); }
+  .boot { grid-column:1/-1; color:var(--dim); font-size:13px;
+          border:1px dashed var(--edge); border-radius:12px; padding:14px 16px; }
+  .boot b { color:var(--accent2); }
+  footer { max-width:1080px; margin:0 auto; padding:0 22px 60px; color:var(--dim);
+           font-size:12.5px; line-height:1.7; }
+  footer code { color:var(--accent2); }
+  a { color:var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="chip">EuroSynth Rev&nbsp;2</span> — analog voice preview lab</h1>
+  <p class="sub">
+    Audio sketches of the <b>analog</b> macros proposed for the second chip
+    (see <a href="../../docs/REV2_ANALOG.md">docs/REV2_ANALOG.md</a>). Unlike the
+    <a href="../">rev-1 playground</a>, nothing here is a bit-exact silicon model —
+    each card is a <b>behavioral circuit simulation</b> in floating point:
+    exponential V/oct converters, tanh differential pairs, ladder &amp; OTA-C filter
+    models, pitch drift, control feedthrough, BBD clock grit. Real silicon will
+    differ (that's the charm) — these previews are for <b>choosing which voices are
+    worth the die area</b>. Rendered live in Python at <code>24&nbsp;kHz</code>;
+    every card has <b>▶ Play</b> and <b>⬇ WAV</b>.
+    Badge colors = report tiers: <span class="num">A</span> backbone ·
+    <span class="num tb">B</span> character · <span class="num tc">C</span> research.
+  </p>
+</header>
+
+<main>
+  <div class="boot" id="boot">⏳ <b>Loading Python (Pyodide)…</b> first load pulls the
+    runtime from a CDN (a few seconds). The voices below activate when it's ready.</div>
+
+  <!-- A1 · Expo VCO -->
+  <section class="voice">
+    <h2><span class="num">A1</span> Expo VCO — CEM3340 homage</h2>
+    <p class="blurb">Matched-NPN exponential converter feeding a triangle core: the
+       pitch slider is a literal <b>CV in volts</b>, one octave per volt. Drift adds
+       the analog truth — a slow random walk of a dozen cents.</p>
+    <div class="row">
+      <label>Pitch CV</label>
+      <input type="range" id="vco-pitch" min="0" max="5" value="2" step="0.01" />
+      <span class="readout" id="vco-pitch-val"></span>
+    </div>
+    <div class="row">
+      <label>Wave</label>
+      <select id="vco-wave">
+        <option value="saw" selected>sawtooth</option>
+        <option value="tri">triangle</option>
+        <option value="pulse">pulse (PWM)</option>
+      </select>
+      <label style="min-width:auto">PW</label>
+      <input type="range" id="vco-pw" min="5" max="95" value="50" style="max-width:110px" />
+      <span class="readout" id="vco-pw-val"></span>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="vco-drift" checked /> analog drift (uncalibrated die)</label>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="vco-dur" min="1" max="6" value="2" step="0.5" />
+      <span class="readout" id="vco-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="vco-play">▶ Play</button>
+      <button class="alt" id="vco-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- A2 · OTA-C SVF -->
+  <section class="voice">
+    <h2><span class="num">A2</span> OTA-C state-variable filter</h2>
+    <p class="blurb">Two gm-C integrators (bias current = cutoff CV). Crank resonance
+       toward self-oscillation; feed it <b>pings</b> with high reso and it rings like
+       a struck bell — the LPG trick.</p>
+    <div class="row">
+      <label>Input</label>
+      <select id="svf-src">
+        <option value="saw" selected>saw osc · 110 Hz</option>
+        <option value="noise">white noise</option>
+        <option value="ping">trigger pings</option>
+      </select>
+      <label style="min-width:auto">Out</label>
+      <select id="svf-mode">
+        <option value="lp" selected>LP</option><option value="bp">BP</option><option value="hp">HP</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Cutoff</label>
+      <input type="range" id="svf-fc" min="0" max="1" value="0.55" step="0.001" />
+      <span class="readout" id="svf-fc-val"></span>
+    </div>
+    <div class="row">
+      <label>Resonance</label>
+      <input type="range" id="svf-res" min="0" max="99" value="55" />
+      <span class="readout" id="svf-res-val"></span>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="svf-sweep" /> sweep the cutoff CV up &amp; back</label>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="svf-dur" min="1" max="8" value="3" step="0.5" />
+      <span class="readout" id="svf-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="svf-play">▶ Play</button>
+      <button class="alt" id="svf-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- B1/B2 · Ladder acid -->
+  <section class="voice">
+    <h2><span class="num tb">B1·B2</span> Ladder filter — acid line</h2>
+    <p class="blurb">A 16-step 303-style pattern (slides, accents, rests) through a
+       4-pole tanh ladder. <b>Transistor</b> = fat Moog; <b>diode</b> = squelchy 303
+       (resonance loses its lows). <i>Renders take a few seconds.</i></p>
+    <div class="row">
+      <label>Ladder</label>
+      <select id="lad-mode">
+        <option value="transistor">transistor (Moog)</option>
+        <option value="diode" selected>diode (303)</option>
+      </select>
+      <label style="min-width:auto">Tempo</label>
+      <input type="range" id="lad-tempo" min="80" max="170" value="128" style="max-width:110px" />
+      <span class="readout" id="lad-tempo-val"></span>
+    </div>
+    <div class="row">
+      <label>Cutoff</label>
+      <input type="range" id="lad-fc" min="0" max="1" value="0.35" step="0.001" />
+      <span class="readout" id="lad-fc-val"></span>
+    </div>
+    <div class="row">
+      <label>Resonance</label>
+      <input type="range" id="lad-res" min="0" max="98" value="78" />
+      <span class="readout" id="lad-res-val"></span>
+    </div>
+    <div class="row">
+      <label>Env → cutoff</label>
+      <input type="range" id="lad-env" min="0" max="4" value="2.2" step="0.1" />
+      <span class="readout" id="lad-env-val"></span>
+    </div>
+    <div class="row">
+      <label>Loops</label>
+      <input type="range" id="lad-loops" min="1" max="4" value="2" />
+      <span class="readout" id="lad-loops-val"></span>
+    </div>
+    <div class="btns">
+      <button id="lad-play">▶ Play pattern</button>
+      <button class="alt" id="lad-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- B3 · Wavefolder -->
+  <section class="voice">
+    <h2><span class="num tb">B3</span> Wavefolder — West-Coast timbre</h2>
+    <p class="blurb">A triangle folded by cascaded differential pairs: drive pushes the
+       wave back on itself, harmonics bloom. Symmetry skews the folds (even
+       harmonics — the mismatch knob).</p>
+    <div class="row">
+      <label>Pitch</label>
+      <input type="range" id="fld-freq" min="40" max="400" value="110" />
+      <span class="readout" id="fld-freq-val"></span>
+    </div>
+    <div class="row">
+      <label>Fold drive</label>
+      <input type="range" id="fld-drive" min="1" max="9" value="5" step="0.1" />
+      <span class="readout" id="fld-drive-val"></span>
+    </div>
+    <div class="row">
+      <label>Symmetry</label>
+      <input type="range" id="fld-sym" min="-1" max="1" value="0" step="0.05" />
+      <span class="readout" id="fld-sym-val"></span>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="fld-sweep" checked /> sweep drive up (hear the bloom)</label>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="fld-dur" min="1" max="6" value="3" step="0.5" />
+      <span class="readout" id="fld-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="fld-play">▶ Play</button>
+      <button class="alt" id="fld-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- A3 · VCA / ring mod -->
+  <section class="voice">
+    <h2><span class="num">A3</span> VCA / ring mod — Gilbert cell</h2>
+    <p class="blurb">One translinear core, three uses: <b>ring</b> (bells &amp; metal),
+       <b>tremolo</b>, and hard <b>VCA chop</b>. Bleed = carrier/CV feedthrough of an
+       imbalanced cell — the honest analog artifact.</p>
+    <div class="row">
+      <label>Mode</label>
+      <select id="vca-mode">
+        <option value="ring" selected>ring modulator</option>
+        <option value="trem">tremolo VCA</option>
+        <option value="chop">gate chop VCA</option>
+      </select>
+      <label style="min-width:auto">Carrier</label>
+      <select id="vca-carrier">
+        <option value="sine" selected>sine</option><option value="saw">saw</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Carrier Hz</label>
+      <input type="range" id="vca-cfreq" min="60" max="800" value="220" />
+      <span class="readout" id="vca-cfreq-val"></span>
+    </div>
+    <div class="row">
+      <label>Mod rate</label>
+      <input type="range" id="vca-mfreq" min="0" max="1" value="0.72" step="0.001" />
+      <span class="readout" id="vca-mfreq-val"></span>
+    </div>
+    <div class="row">
+      <label>Bleed</label>
+      <input type="range" id="vca-bleed" min="0" max="40" value="8" />
+      <span class="readout" id="vca-bleed-val"></span>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="vca-dur" min="1" max="6" value="3" step="0.5" />
+      <span class="readout" id="vca-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="vca-play">▶ Play</button>
+      <button class="alt" id="vca-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- A4 · Noise -->
+  <section class="voice">
+    <h2><span class="num">A4</span> Noise — thermal &amp; avalanche</h2>
+    <p class="blurb">White = amplified resistor hiss. Pink = −3 dB/oct filter bank.
+       Avalanche = the popcorn/burst noise of a junction pushed to breakdown — the
+       10&nbsp;V-domain experiment. Wind runs it through a swept bandpass.</p>
+    <div class="row">
+      <label>Color</label>
+      <select id="nz-color">
+        <option value="white" selected>white (thermal)</option>
+        <option value="pink">pink (−3 dB/oct)</option>
+        <option value="popcorn">avalanche popcorn</option>
+      </select>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="nz-wind" /> wind: swept bandpass (SVF, high reso)</label>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="nz-dur" min="1" max="8" value="3" step="0.5" />
+      <span class="readout" id="nz-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="nz-play">▶ Play</button>
+      <button class="alt" id="nz-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- B4 · Drum voice -->
+  <section class="voice">
+    <h2><span class="num tb">B4</span> Drum voice — bridged-T (808)</h2>
+    <p class="blurb">Triggered resonators: kick &amp; tom are swept damped sines into a
+       soft-clipping stage, snare adds gated noise, hat is six squares through a
+       highpass. <b>▶ Groove</b> plays the whole kit.</p>
+    <div class="row">
+      <label>Sound</label>
+      <select id="dr-type">
+        <option value="kick" selected>kick</option>
+        <option value="tom">tom</option>
+        <option value="snare">snare</option>
+        <option value="hat">hat</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Tune</label>
+      <input type="range" id="dr-tune" min="0.7" max="1.4" value="1" step="0.01" />
+      <span class="readout" id="dr-tune-val"></span>
+    </div>
+    <div class="row">
+      <label>Decay</label>
+      <input type="range" id="dr-decay" min="0.4" max="2.2" value="1" step="0.05" />
+      <span class="readout" id="dr-decay-val"></span>
+    </div>
+    <div class="btns">
+      <button id="dr-hit">▶ Hit</button>
+      <button class="alt" id="dr-pat">▶ Groove</button>
+      <button class="alt" id="dr-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- C1 · BBD -->
+  <section class="voice">
+    <h2><span class="num tc">C1</span> BBD delay — bucket brigade</h2>
+    <p class="blurb">A plucked arp through a simulated 1024-stage bucket-brigade line:
+       delay time sets the clock, and short times = bright, long times = dark, exactly
+       like the real chips. Grit adds clock noise, droop and companding crunch.</p>
+    <div class="row">
+      <label>Delay time</label>
+      <input type="range" id="bbd-time" min="40" max="450" value="220" />
+      <span class="readout" id="bbd-time-val"></span>
+    </div>
+    <div class="row">
+      <label>Feedback</label>
+      <input type="range" id="bbd-fb" min="0" max="92" value="55" />
+      <span class="readout" id="bbd-fb-val"></span>
+    </div>
+    <div class="row">
+      <label>Grit</label>
+      <input type="range" id="bbd-grit" min="0" max="100" value="45" />
+      <span class="readout" id="bbd-grit-val"></span>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="bbd-dur" min="2" max="10" value="5" step="0.5" />
+      <span class="readout" id="bbd-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="bbd-play">▶ Play</button>
+      <button class="alt" id="bbd-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- C2 · Chua -->
+  <section class="voice">
+    <h2><span class="num tc">C2</span> Chua's circuit — analog chaos</h2>
+    <p class="blurb">The canonical chaotic circuit (inductor replaced by a gyrator, as
+       it would be on-die), integrated live. Low α = a plain limit-cycle tone; nudge
+       it up and it period-doubles into the <b>double-scroll</b> growl.</p>
+    <div class="row">
+      <label>Chaos α</label>
+      <input type="range" id="chu-alpha" min="13.8" max="16.4" value="15.6" step="0.02" />
+      <span class="readout" id="chu-alpha-val"></span>
+    </div>
+    <div class="row">
+      <label>Rate</label>
+      <input type="range" id="chu-rate" min="0.5" max="6" value="2" step="0.1" />
+      <span class="readout" id="chu-rate-val"></span>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="chu-dur" min="1" max="8" value="4" step="0.5" />
+      <span class="readout" id="chu-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="chu-play">▶ Play</button>
+      <button class="alt" id="chu-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- C3 · Lunetta -->
+  <section class="voice">
+    <h2><span class="num tc">C3</span> Lunetta bank — CMOS drone</h2>
+    <p class="blurb">A bank of Schmitt-trigger relaxation oscillators (standard cells
+       misused, CD40106-style). Near-unison spread = thick beating drone; XOR the
+       outputs through logic gates for ring-mod shimmer.</p>
+    <div class="row">
+      <label>Oscillators</label>
+      <input type="range" id="lun-n" min="2" max="8" value="5" />
+      <span class="readout" id="lun-n-val"></span>
+    </div>
+    <div class="row">
+      <label>Base pitch</label>
+      <input type="range" id="lun-freq" min="40" max="500" value="110" />
+      <span class="readout" id="lun-freq-val"></span>
+    </div>
+    <div class="row">
+      <label>Spread</label>
+      <input type="range" id="lun-spread" min="0" max="12" value="3" step="0.5" />
+      <span class="readout" id="lun-spread-val"></span>
+    </div>
+    <div class="row">
+      <label>Logic</label>
+      <select id="lun-logic">
+        <option value="sum" selected>sum (beating drone)</option>
+        <option value="xor">XOR chain (shimmer)</option>
+        <option value="mix">sum + XOR</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Length</label>
+      <input type="range" id="lun-dur" min="2" max="10" value="5" step="0.5" />
+      <span class="readout" id="lun-dur-val"></span>
+    </div>
+    <div class="btns">
+      <button id="lun-play">▶ Play</button>
+      <button class="alt" id="lun-dl">⬇ WAV</button>
+    </div>
+  </section>
+
+  <!-- Full patch -->
+  <section class="voice" style="grid-column:1/-1">
+    <h2><span class="num">★</span> The full Rev-2 voice — VCO → folder → ladder → VCA</h2>
+    <p class="blurb">The whole proposed signal chain playing a sequence: expo VCO saw,
+       envelope-driven wavefolder, transistor ladder with envelope-swept cutoff, VCA.
+       Fold drive at 0 = pure East-Coast subtractive; push it for the West-Coast bite.
+       <i>(Longest render on the page — the entire chip per sample.)</i></p>
+    <div class="row">
+      <label>Tempo</label>
+      <input type="range" id="fp-tempo" min="70" max="160" value="112" />
+      <span class="readout" id="fp-tempo-val"></span>
+      <label style="min-width:auto">Loops</label>
+      <input type="range" id="fp-loops" min="1" max="4" value="2" style="max-width:110px" />
+      <span class="readout" id="fp-loops-val"></span>
+    </div>
+    <div class="row">
+      <label>Fold drive</label>
+      <input type="range" id="fp-drive" min="0" max="8" value="3" step="0.1" />
+      <span class="readout" id="fp-drive-val"></span>
+    </div>
+    <div class="row">
+      <label>Cutoff</label>
+      <input type="range" id="fp-fc" min="0" max="1" value="0.3" step="0.001" />
+      <span class="readout" id="fp-fc-val"></span>
+      <label style="min-width:auto">Reso</label>
+      <input type="range" id="fp-res" min="0" max="95" value="45" style="max-width:110px" />
+      <span class="readout" id="fp-res-val"></span>
+    </div>
+    <div class="row">
+      <label>Env → cutoff</label>
+      <input type="range" id="fp-env" min="0" max="4" value="2.4" step="0.1" />
+      <span class="readout" id="fp-env-val"></span>
+    </div>
+    <div class="btns">
+      <button id="fp-play">▶ Play the chip</button>
+      <button class="alt" id="fp-dl">⬇ WAV</button>
+    </div>
+  </section>
+</main>
+
+<div id="status"></div>
+
+<footer>
+  <p><b>What you're hearing.</b> Behavioral analog previews, not golden vectors: each
+  card implements the circuit idea from
+  <a href="../../docs/REV2_ANALOG.md">docs/REV2_ANALOG.md</a> — exponential
+  converters, tanh differential-pair saturation, one-pole-per-stage ladder models, a
+  trapezoidal-integration OTA-C filter, random-walk pitch drift, Gilbert-cell
+  feedthrough, BBD clock bandwidth — in floating-point Python at 24&nbsp;kHz. The
+  real macros will be designed in xschem, verified in ngspice, and laid out by hand;
+  fabricated silicon will drift, mismatch and clip in its own ways. Use this page to
+  decide which voices earn a place on the die, not as a promise of the exact sound.</p>
+  <p>Hosting: any static server — <code>python -m http.server</code> from the repo
+  root, then open <code>/web/rev2/</code>. Runs on GitHub Pages unchanged. The rev-1
+  bit-exact playground lives at <a href="../">/web/</a>.</p>
+</footer>
+
+<!-- ===================== plain-JS audio plumbing ===================== -->
+<script>
+  let audioCtx = null;
+  function ensureCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  window.playWav = async function (wavBytes) {
+    const ctx = ensureCtx();
+    const ab = wavBytes.buffer.slice(
+      wavBytes.byteOffset, wavBytes.byteOffset + wavBytes.byteLength);
+    const audioBuf = await ctx.decodeAudioData(ab);
+    const src = ctx.createBufferSource();
+    src.buffer = audioBuf;
+    src.connect(ctx.destination);
+    src.start();
+    return audioBuf.duration;
+  };
+  window.downloadWav = function (wavBytes, name) {
+    const blob = new Blob([wavBytes], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name || "eurosynth_rev2.wav";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
+</script>
+
+<!-- ===================== the rev-2 analog previews, in Python ===================== -->
+<script type="py">
+# ---------------------------------------------------------------------------
+# EuroSynth Rev 2 — behavioral previews of the proposed ANALOG macros.
+# Floating-point circuit sketches (docs/REV2_ANALOG.md), NOT bit-exact silicon
+# models. Deterministic (seeded) so a downloaded WAV reproduces exactly.
+# ---------------------------------------------------------------------------
+import io, wave, struct, asyncio, math, random
+import js
+from pyscript import when, window, document
+
+SR = 24000          # preview rate; the real circuits are continuous-time
+TWO_PI = 2.0 * math.pi
+
+
+# ---- shared circuit primitives --------------------------------------------
+def clamp16(x):
+    if x > 32767: return 32767
+    if x < -32768: return -32768
+    return int(x)
+
+def polyblep(t, dt):
+    # band-limited step correction: analog edges are smooth, keep them so
+    if t < dt:
+        x = t / dt
+        return x + x - x * x - 1.0
+    if t > 1.0 - dt:
+        x = (t - 1.0) / dt
+        return x * x + x + x + 1.0
+    return 0.0
+
+class Osc:
+    def __init__(self):
+        self.t = 0.0
+    def _adv(self, f):
+        dt = f / SR
+        self.t += dt
+        if self.t >= 1.0: self.t -= 1.0
+        return dt
+    def saw(self, f):
+        dt = self._adv(f)
+        return 2.0 * self.t - 1.0 - polyblep(self.t, dt)
+    def pulse(self, f, pw):
+        dt = self._adv(f)
+        y = 1.0 if self.t < pw else -1.0
+        y += polyblep(self.t, dt)
+        y -= polyblep((self.t - pw) % 1.0, dt)
+        return y
+    def tri(self, f):
+        self._adv(f)
+        return 4.0 * abs(self.t - 0.5) - 1.0
+    def sine(self, f):
+        self._adv(f)
+        return math.sin(TWO_PI * self.t)
+
+class SVF:
+    """OTA-C state-variable filter, trapezoidal integration (stable anywhere)."""
+    def __init__(self):
+        self.ic1 = 0.0; self.ic2 = 0.0
+    def tick(self, x, fc, res):
+        fc = min(max(fc, 10.0), SR * 0.45)
+        g = math.tan(math.pi * fc / SR)
+        k = 2.0 - 2.0 * min(res, 0.995)
+        a1 = 1.0 / (1.0 + g * (g + k))
+        a2 = g * a1
+        v3 = x - self.ic2
+        v1 = a1 * self.ic1 + a2 * v3
+        v2 = self.ic2 + g * v1
+        self.ic1 = 2.0 * v1 - self.ic1
+        self.ic2 = 2.0 * v2 - self.ic2
+        return v2, v1, x - k * v1 - v2          # lp, bp, hp
+
+class Ladder:
+    """4-pole ladder: tanh input pair, one pole per rung. diode=True taps the
+    feedback through a highpass (the diode ladder's squelchy, low-less reso)."""
+    def __init__(self, diode=False):
+        self.s = [0.0, 0.0, 0.0, 0.0]
+        self.fb_lp = 0.0
+        self.diode = diode
+    def tick(self, x, fc, res):
+        fc = min(max(fc, 20.0), 9000.0)
+        g = 1.0 - math.exp(-TWO_PI * fc / SR)
+        s = self.s
+        fb = s[3]
+        if self.diode:
+            self.fb_lp += 0.05 * (fb - self.fb_lp)
+            fb = fb - self.fb_lp
+            k = 4.6 * res
+        else:
+            k = 4.2 * res
+        u = math.tanh(x - k * fb)
+        s[0] += g * (u - s[0])
+        s[1] += g * (s[0] - s[1])
+        s[2] += g * (s[1] - s[2])
+        s[3] += g * (s[2] - s[3])
+        return s[3]
+
+def fold(x):
+    # ideal cascade of diff-pair folders: reflect back into [-1, 1]
+    n = 0
+    while (x > 1.0 or x < -1.0) and n < 64:
+        x = 2.0 - x if x > 1.0 else -2.0 - x
+        n += 1
+    return x
+
+
+# ---- mastering: normalize, edge fade, package as 24 kHz mono WAV -----------
+def master(sig, fade_n=240):
+    n = len(sig)
+    if n == 0: return [0]
+    peak = max(abs(v) for v in sig)
+    g = 29000.0 / peak if peak > 1e-9 else 0.0
+    out = []
+    for i, v in enumerate(sig):
+        y = v * g
+        if i < fade_n: y *= i / float(fade_n)
+        j = n - 1 - i
+        if j < fade_n: y *= j / float(fade_n)
+        out.append(clamp16(round(y)))
+    return out
+
+def build_wav(samples):
+    buf = io.BytesIO()
+    w = wave.open(buf, "wb")
+    w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+    w.writeframes(b"".join(struct.pack("<h", s) for s in samples))
+    w.close()
+    return buf.getvalue()
+
+
+# ---- DOM glue --------------------------------------------------------------
+def q(sel): return document.querySelector(sel)
+def ival(sel): return int(float(q(sel).value))
+def fval(sel): return float(q(sel).value)
+def sval(sel): return q(sel).value
+def chk(sel): return q(sel).checked
+
+def status(msg, kind=""):
+    el = q("#status")
+    el.textContent = msg
+    el.className = ("show " + kind).strip()
+
+_last_wav = {"bytes": None, "name": "eurosynth_rev2.wav"}
+
+def _to_jsbytes(b):
+    arr = js.Uint8Array.new(len(b))
+    arr.assign(b)
+    return arr
+
+async def emit(samples, name):
+    wav = build_wav(master(samples))
+    _last_wav["bytes"] = wav
+    _last_wav["name"] = name
+    await window.playWav(_to_jsbytes(wav))
+    return len(samples) / float(SR)
+
+async def run(render, name, busy="Simulating the circuit…"):
+    status(busy, "busy")
+    await asyncio.sleep(0.03)
+    try:
+        secs = await emit(render(), name)
+        status("▶ %s  ·  %.1f s @ 24 kHz" % (name, secs))
+    except Exception as e:                     # noqa: BLE001
+        status("error: %s" % e, "err")
+
+def download():
+    if _last_wav["bytes"] is None:
+        status("nothing rendered yet — press ▶ first", "err"); return
+    window.downloadWav(_to_jsbytes(_last_wav["bytes"]), _last_wav["name"])
+
+
+# ============================ renderers ====================================
+
+# --- A1 · expo VCO ---
+def render_vco():
+    volts = fval("#vco-pitch")
+    wavesel = sval("#vco-wave")
+    pw = ival("#vco-pw") / 100.0
+    drift_on = chk("#vco-drift")
+    n = int(fval("#vco-dur") * SR)
+    f0 = 32.703 * (2.0 ** volts)               # C1 at 0 V, one octave per volt
+    rng = random.Random(42)
+    osc = Osc(); d = 0.0; out = []
+    for i in range(n):
+        f = f0
+        if drift_on:
+            d = 0.9995 * d + rng.gauss(0.0, 0.00035)   # ~±12 cent random walk
+            f = f0 * (2.0 ** (d + 0.001 * math.sin(TWO_PI * 0.7 * i / SR)))
+        if wavesel == "saw":   y = osc.saw(f)
+        elif wavesel == "tri": y = osc.tri(f)
+        else:                  y = osc.pulse(f, pw)
+        out.append(y)
+    return out
+
+# --- A2 · OTA-C SVF ---
+def render_svf():
+    src = sval("#svf-src"); mode = sval("#svf-mode")
+    fc_set = 60.0 * (133.0 ** fval("#svf-fc"))         # 60 Hz .. 8 kHz, log
+    res = ival("#svf-res") / 101.0
+    sweep = chk("#svf-sweep")
+    n = int(fval("#svf-dur") * SR)
+    rng = random.Random(7)
+    osc = Osc(); svf = SVF()
+    ping_period = int(0.4 * SR)
+    out = []
+    for i in range(n):
+        if src == "saw":     x = 0.6 * osc.saw(110.0)
+        elif src == "noise": x = 0.5 * rng.uniform(-1.0, 1.0)
+        else:                x = 4.0 if i % ping_period == 0 else 0.0
+        if sweep:
+            ph = i / float(n)
+            tri = 2.0 * ph if ph < 0.5 else 2.0 - 2.0 * ph
+            fc = 80.0 * ((max(fc_set, 90.0) / 80.0) ** tri)
+        else:
+            fc = fc_set
+        lp, bp, hp = svf.tick(x, fc, res)
+        out.append(lp if mode == "lp" else (bp if mode == "bp" else hp))
+    return out
+
+# --- B1/B2 · ladder acid pattern ---
+#         (semitone, gate, slide, accent)
+ACID_PAT = [(0,1,0,1),(0,1,0,0),(12,1,1,0),(0,1,0,0),
+            (3,1,0,1),(None,0,0,0),(15,1,1,0),(12,1,0,0),
+            (0,1,0,0),(7,1,0,1),(None,0,0,0),(19,1,1,0),
+            (10,1,0,0),(12,1,0,1),(3,1,1,0),(0,1,0,0)]
+
+def render_acid():
+    diode = sval("#lad-mode") == "diode"
+    base = 60.0 * (66.7 ** fval("#lad-fc"))            # 60 Hz .. 4 kHz
+    res = ival("#lad-res") / 100.0
+    env_oct = fval("#lad-env")
+    tempo = ival("#lad-tempo")
+    loops = ival("#lad-loops")
+    step_n = int(SR * 15.0 / tempo)                    # one 16th note
+    root = 55.0
+    osc = Osc(); lad = Ladder(diode)
+    f_cur = root; f_tgt = root
+    env = 0.0; vca = 0.0
+    out = []
+    for s in range(16 * loops):
+        semi, gate, slide, acc = ACID_PAT[s % 16]
+        if gate:
+            f_tgt = root * (2.0 ** (semi / 12.0))
+        for i in range(step_n):
+            if gate and i == 0 and not slide:
+                env = 1.3 if acc else 1.0              # retrigger (not on slides)
+            coef = 0.0008 if slide else 0.02           # 303 glide vs snap
+            f_cur += coef * (f_tgt - f_cur)
+            env *= 0.99978                             # ~190 ms decay
+            x = osc.saw(f_cur)
+            fc = base * (2.0 ** (min(env, 1.0) * env_oct))
+            r = min(0.98, res * (1.15 if acc else 1.0))
+            y = lad.tick(x * (1.6 if acc else 1.1), fc, r)
+            tgt = min(env, 1.0) if gate else 0.0
+            vca += 0.01 * (tgt - vca)                  # declick VCA
+            out.append(y * vca)
+    return out
+
+# --- B3 · wavefolder ---
+def render_folder():
+    f = fval("#fld-freq")
+    drive_set = fval("#fld-drive")
+    sym = fval("#fld-sym")
+    sweep = chk("#fld-sweep")
+    n = int(fval("#fld-dur") * SR)
+    osc = Osc(); out = []
+    for i in range(n):
+        d = 0.8 + (drive_set - 0.8) * (i / float(n)) if sweep else drive_set
+        y = fold(osc.tri(f) * d + sym * 0.8)
+        out.append(math.tanh(1.3 * y))
+    return out
+
+# --- A3 · VCA / ring mod (Gilbert cell) ---
+def render_vca():
+    mode = sval("#vca-mode"); car = sval("#vca-carrier")
+    cf = fval("#vca-cfreq")
+    mf = 0.5 * (4000.0 ** fval("#vca-mfreq"))          # 0.5 Hz .. 2 kHz, log
+    bleed = ival("#vca-bleed") / 100.0
+    n = int(fval("#vca-dur") * SR)
+    co = Osc(); mo = Osc()
+    gs = 0.0; out = []
+    for i in range(n):
+        c = co.sine(cf) if car == "sine" else 0.7 * co.saw(cf)
+        m = mo.sine(mf)
+        if mode == "ring":
+            y = c * m + bleed * 0.3 * (c + m)          # carrier + CV feedthrough
+        elif mode == "trem":
+            y = c * (0.55 + 0.45 * m) + bleed * 0.25 * m
+        else:  # chop
+            gate = 1.0 if m > 0.0 else 0.0
+            gs += 0.008 * (gate - gs)                  # VCA slew (declick)
+            y = c * gs + bleed * 0.25 * (2.0 * gate - 1.0)
+        out.append(y)
+    return out
+
+# --- A4 · noise ---
+def render_noise():
+    color = sval("#nz-color"); wind = chk("#nz-wind")
+    n = int(fval("#nz-dur") * SR)
+    rng = random.Random(2026)
+    b0 = b1 = b2 = 0.0
+    burst = 0.0; blevel = 0.0
+    svf = SVF(); out = []
+    for i in range(n):
+        w = rng.uniform(-1.0, 1.0)
+        if color == "white":
+            y = w
+        elif color == "pink":                          # Kellet economy pinking
+            b0 = 0.99765 * b0 + w * 0.0990460
+            b1 = 0.96300 * b1 + w * 0.2965164
+            b2 = 0.57000 * b2 + w * 1.0526913
+            y = 0.2 * (b0 + b1 + b2 + w * 0.1848)
+        else:                                          # avalanche popcorn
+            if rng.random() < 0.0008:
+                blevel = rng.choice([-1.0, -0.5, 0.5, 1.0]) * rng.uniform(0.4, 1.0)
+            if rng.random() < 0.003:
+                blevel *= 0.5
+            burst += 0.15 * (blevel - burst)
+            y = 0.35 * w + 0.8 * burst * rng.uniform(0.3, 1.0)
+        if wind:
+            ph = i / float(n)
+            tri = 2.0 * ph if ph < 0.5 else 2.0 - 2.0 * ph
+            lp, bp, hp = svf.tick(y, 150.0 * (14.0 ** tri), 0.85)
+            y = 2.0 * bp
+        out.append(y)
+    return out
+
+# --- B4 · drum voices ---
+def _kick(tune, decay, rng):
+    n = int((0.35 * decay + 0.08) * SR)
+    ph = 0.0; out = []
+    for i in range(n):
+        t = i / float(SR)
+        f = 46.0 * tune * (1.0 + 3.8 * math.exp(-t * 30.0))
+        ph += f / SR
+        y = math.tanh(2.3 * math.sin(TWO_PI * ph) * math.exp(-t * 6.5 / decay))
+        if i < 60:
+            y += 0.4 * rng.uniform(-1.0, 1.0) * (1.0 - i / 60.0)
+        out.append(y)
+    return out
+
+def _tom(tune, decay, rng):
+    n = int((0.3 * decay + 0.06) * SR)
+    ph = 0.0; out = []
+    for i in range(n):
+        t = i / float(SR)
+        f = 105.0 * tune * (1.0 + 1.8 * math.exp(-t * 16.0))
+        ph += f / SR
+        out.append(math.tanh(1.8 * math.sin(TWO_PI * ph) * math.exp(-t * 8.0 / decay)))
+    return out
+
+def _snare(tune, decay, rng):
+    n = int((0.25 * decay + 0.08) * SR)
+    lp = 0.0; ph1 = 0.0; ph2 = 0.0; out = []
+    for i in range(n):
+        t = i / float(SR)
+        ph1 += 185.0 * tune / SR; ph2 += 330.0 * tune / SR
+        body = 0.5 * (math.sin(TWO_PI * ph1) + 0.8 * math.sin(TWO_PI * ph2)) \
+               * math.exp(-t * 22.0)
+        w = rng.uniform(-1.0, 1.0)
+        lp += 0.25 * (w - lp)
+        out.append(math.tanh(1.5 * (body + 1.1 * (w - lp) * math.exp(-t * 9.5 / decay))))
+    return out
+
+_HAT_F = [2104.0, 3200.0, 3368.0, 3792.0, 4696.0, 6760.0]
+def _hat(tune, decay, rng):
+    n = int((0.09 * decay + 0.03) * SR)
+    ph = [rng.random() for _ in _HAT_F]
+    lp = 0.0; g = 1.0 - math.exp(-TWO_PI * 5000.0 / SR)
+    out = []
+    for i in range(n):
+        t = i / float(SR)
+        s = 0.0
+        for k, f in enumerate(_HAT_F):
+            ph[k] += f * tune / SR
+            if ph[k] >= 1.0: ph[k] -= 1.0
+            s += 1.0 if ph[k] < 0.5 else -1.0
+        s /= 6.0
+        lp += g * (s - lp)
+        out.append((s - lp) * math.exp(-t * 38.0 / decay))
+    return out
+
+_DRUMS = {"kick": _kick, "tom": _tom, "snare": _snare, "hat": _hat}
+
+def render_drum_hit():
+    tune = fval("#dr-tune"); decay = fval("#dr-decay")
+    hit = _DRUMS[sval("#dr-type")](tune, decay, random.Random(5))
+    return hit + [0.0] * int(0.15 * SR)
+
+def render_drum_groove():
+    tune = fval("#dr-tune"); decay = fval("#dr-decay")
+    rng = random.Random(5)
+    step = int(60.0 / 118.0 / 4.0 * SR)                # 16ths at 118 BPM
+    total = step * 32 + int(0.6 * SR)
+    buf = [0.0] * total
+    def put(hit, pos, gain=1.0):
+        for j, v in enumerate(hit):
+            p = pos + j
+            if p < total: buf[p] += v * gain
+    kick = _kick(tune, decay, rng); tom = _tom(tune, decay, rng)
+    snare = _snare(tune, decay, rng); hat = _hat(tune, min(decay, 0.9), rng)
+    for s in (0, 4, 8, 12, 16, 20, 24):     put(kick, s * step)
+    for s in (4, 12, 20, 28):               put(snare, s * step, 0.9)
+    for s in range(0, 32, 2):               put(hat, s * step, 0.5)
+    for s, gn in ((29, 0.9), (31, 1.0)):    put(tom, s * step, gn)
+    return buf
+
+# --- C1 · BBD delay ---
+def render_bbd():
+    tsec = ival("#bbd-time") / 1000.0
+    fb = ival("#bbd-fb") / 100.0
+    grit = ival("#bbd-grit") / 100.0
+    n = int(fval("#bbd-dur") * SR)
+    rng = random.Random(11)
+    # dry input: a little plucked arp, then silence for the repeats
+    osc = Osc()
+    dry = []
+    for f in (220.0, 261.63, 329.63, 440.0):
+        for i in range(int(0.28 * SR)):
+            dry.append(0.9 * osc.tri(f) * math.exp(-i / (0.09 * SR)))
+    dry = (dry + [0.0] * n)[:n]
+    L = max(8, int(tsec * SR))
+    RB = L + 8
+    buf = [0.0] * RB
+    wp = 0
+    clock = 1024.0 / tsec                              # 1024 stages
+    bw = min(7500.0, clock * 0.30) * (1.0 - 0.55 * grit)
+    g_lp = 1.0 - math.exp(-TWO_PI * bw / SR)
+    whine_f = min(11000.0, clock * 0.5)
+    lp = 0.0; out = []
+    for i in range(n):
+        t = i / float(SR)
+        mod = 1.0 + 0.006 * math.sin(TWO_PI * 0.8 * t) * (0.3 + grit) \
+              + rng.gauss(0.0, 1.0) * 0.0004 * grit
+        d = min(L - 2.0, max(4.0, (L - 3.0) * mod))
+        rp = (wp - d) % RB
+        i0 = int(rp); frac = rp - i0
+        w = buf[i0] * (1.0 - frac) + buf[(i0 + 1) % RB] * frac
+        lp += g_lp * (w - lp)
+        wet = math.tanh(lp * (1.0 + 1.5 * grit))
+        wet += (rng.uniform(-1.0, 1.0) * 0.0025
+                + 0.001 * math.sin(TWO_PI * whine_f * t)) * grit
+        buf[wp] = dry[i] + wet * fb
+        wp = (wp + 1) % RB
+        out.append(0.75 * dry[i] + 0.85 * wet)
+    return out
+
+# --- C2 · Chua's circuit ---
+def render_chua():
+    alpha = fval("#chu-alpha"); rate = fval("#chu-rate")
+    n = int(fval("#chu-dur") * SR)
+    beta = 28.0; m0 = -1.143; m1 = -0.714
+    x, y, z = 0.7, 0.0, 0.0
+    total_dt = 0.0125 * rate
+    sub = 1 + int(total_dt / 0.008)
+    dt = total_dt / sub
+    out = []
+    for i in range(n):
+        for _ in range(sub):
+            fx = m1 * x + 0.5 * (m0 - m1) * (abs(x + 1.0) - abs(x - 1.0))
+            dx = alpha * (y - x - fx)
+            dy = x - y + z
+            dz = -beta * y
+            x += dt * dx; y += dt * dy; z += dt * dz
+        if abs(x) > 40.0 or abs(z) > 200.0:            # divergence guard
+            x, y, z = 0.7, 0.0, 0.0
+        out.append(0.4 * x)
+    return out
+
+# --- C3 · Lunetta bank ---
+def render_lunetta():
+    nosc = ival("#lun-n")
+    spread = fval("#lun-spread") / 100.0
+    base = fval("#lun-freq")
+    logic = sval("#lun-logic")
+    n = int(fval("#lun-dur") * SR)
+    rng = random.Random(nosc * 1000 + int(spread * 997) + int(base))
+    freqs = [base * (1.0 + rng.uniform(-spread, spread)) for _ in range(nosc)]
+    ph = [rng.random() for _ in range(nosc)]
+    lp = 0.0; g = 1.0 - math.exp(-TWO_PI * 6500.0 / SR)
+    out = []
+    for i in range(n):
+        s = 0.0; xr = 1.0
+        for k in range(nosc):
+            ph[k] += freqs[k] / SR
+            if ph[k] >= 1.0: ph[k] -= 1.0
+            v = 1.0 if ph[k] < 0.5 else -1.0
+            s += v
+            xr = -xr * v                               # XOR chain in ±1 form
+        s /= nosc
+        if logic == "sum":   y = s
+        elif logic == "xor": y = 0.8 * xr
+        else:                y = 0.6 * s + 0.4 * xr
+        lp += g * (y - lp)
+        out.append(lp)
+    return out
+
+# --- ★ · full voice chain ---
+FP_PAT = [0, None, 3, 5, 7, None, 12, 10, 0, 3, None, 7, 15, 12, None, 10]
+
+def render_fullpatch():
+    tempo = ival("#fp-tempo"); drive = fval("#fp-drive")
+    base = 100.0 * (40.0 ** fval("#fp-fc"))            # 100 Hz .. 4 kHz
+    res = ival("#fp-res") / 100.0
+    env_oct = fval("#fp-env")
+    loops = ival("#fp-loops")
+    step_n = int(SR * 15.0 / tempo)
+    root = 110.0
+    osc = Osc(); lad = Ladder(False)
+    f = root; env = 0.0; vca = 0.0
+    out = []
+    for s in range(16 * loops):
+        semi = FP_PAT[s % 16]
+        gate = semi is not None
+        if gate:
+            f = root * (2.0 ** (semi / 12.0))
+        for i in range(step_n):
+            if gate and i == 0: env = 1.0
+            env *= 0.99975
+            x = osc.saw(f)
+            if drive > 0.05:
+                x = 0.9 * fold(x * (1.0 + drive * env))
+            y = lad.tick(1.2 * x, base * (2.0 ** (env * env_oct)), min(res, 0.95))
+            vca += 0.012 * ((env if gate else 0.0) - vca)
+            out.append(y * vca)
+    return out
+
+
+# ====================== readouts + wiring ======================
+def upd_all(*_):
+    v = fval("#vco-pitch")
+    q("#vco-pitch-val").textContent = "%.2f V · %.0f Hz" % (v, 32.703 * 2.0 ** v)
+    q("#vco-pw-val").textContent = "%d%%" % ival("#vco-pw")
+    q("#vco-dur-val").textContent = "%.1f s" % fval("#vco-dur")
+    q("#svf-fc-val").textContent = "%.0f Hz" % (60.0 * 133.0 ** fval("#svf-fc"))
+    q("#svf-res-val").textContent = "%d%%" % ival("#svf-res")
+    q("#svf-dur-val").textContent = "%.1f s" % fval("#svf-dur")
+    q("#lad-fc-val").textContent = "%.0f Hz" % (60.0 * 66.7 ** fval("#lad-fc"))
+    q("#lad-res-val").textContent = "%d%%" % ival("#lad-res")
+    q("#lad-env-val").textContent = "%.1f oct" % fval("#lad-env")
+    q("#lad-tempo-val").textContent = "%d BPM" % ival("#lad-tempo")
+    q("#lad-loops-val").textContent = "×%d" % ival("#lad-loops")
+    q("#fld-freq-val").textContent = "%.0f Hz" % fval("#fld-freq")
+    q("#fld-drive-val").textContent = "×%.1f" % fval("#fld-drive")
+    q("#fld-sym-val").textContent = "%.2f" % fval("#fld-sym")
+    q("#fld-dur-val").textContent = "%.1f s" % fval("#fld-dur")
+    q("#vca-cfreq-val").textContent = "%.0f Hz" % fval("#vca-cfreq")
+    mf = 0.5 * (4000.0 ** fval("#vca-mfreq"))
+    q("#vca-mfreq-val").textContent = ("%.1f Hz" % mf) if mf < 100 else ("%.0f Hz" % mf)
+    q("#vca-bleed-val").textContent = "%d%%" % ival("#vca-bleed")
+    q("#vca-dur-val").textContent = "%.1f s" % fval("#vca-dur")
+    q("#nz-dur-val").textContent = "%.1f s" % fval("#nz-dur")
+    q("#dr-tune-val").textContent = "×%.2f" % fval("#dr-tune")
+    q("#dr-decay-val").textContent = "×%.2f" % fval("#dr-decay")
+    t = ival("#bbd-time")
+    q("#bbd-time-val").textContent = "%d ms · clk %.1f kHz" % (t, 1024.0 / t)
+    q("#bbd-fb-val").textContent = "%d%%" % ival("#bbd-fb")
+    q("#bbd-grit-val").textContent = "%d%%" % ival("#bbd-grit")
+    q("#bbd-dur-val").textContent = "%.1f s" % fval("#bbd-dur")
+    q("#chu-alpha-val").textContent = "%.2f" % fval("#chu-alpha")
+    q("#chu-rate-val").textContent = "×%.1f" % fval("#chu-rate")
+    q("#chu-dur-val").textContent = "%.1f s" % fval("#chu-dur")
+    q("#lun-n-val").textContent = "%d osc" % ival("#lun-n")
+    q("#lun-freq-val").textContent = "%.0f Hz" % fval("#lun-freq")
+    q("#lun-spread-val").textContent = "±%.1f%%" % fval("#lun-spread")
+    q("#lun-dur-val").textContent = "%.1f s" % fval("#lun-dur")
+    q("#fp-tempo-val").textContent = "%d BPM" % ival("#fp-tempo")
+    q("#fp-loops-val").textContent = "×%d" % ival("#fp-loops")
+    q("#fp-drive-val").textContent = "×%.1f" % fval("#fp-drive")
+    q("#fp-fc-val").textContent = "%.0f Hz" % (100.0 * 40.0 ** fval("#fp-fc"))
+    q("#fp-res-val").textContent = "%d%%" % ival("#fp-res")
+    q("#fp-env-val").textContent = "%.1f oct" % fval("#fp-env")
+
+_CTRLS = ["vco-pitch","vco-pw","vco-dur","svf-fc","svf-res","svf-dur",
+          "lad-fc","lad-res","lad-env","lad-tempo","lad-loops",
+          "fld-freq","fld-drive","fld-sym","fld-dur",
+          "vca-cfreq","vca-mfreq","vca-bleed","vca-dur","nz-dur",
+          "dr-tune","dr-decay","bbd-time","bbd-fb","bbd-grit","bbd-dur",
+          "chu-alpha","chu-rate","chu-dur","lun-n","lun-freq","lun-spread",
+          "lun-dur","fp-tempo","fp-loops","fp-drive","fp-fc","fp-res","fp-env"]
+for _c in _CTRLS:
+    when("input", "#" + _c)(upd_all)
+    when("change", "#" + _c)(upd_all)
+
+
+# --- buttons ---
+@when("click", "#vco-play")
+async def _(e): await run(render_vco, "rev2_vco.wav")
+@when("click", "#vco-dl")
+def _(e): download()
+
+@when("click", "#svf-play")
+async def _(e): await run(render_svf, "rev2_svf.wav")
+@when("click", "#svf-dl")
+def _(e): download()
+
+@when("click", "#lad-play")
+async def _(e): await run(render_acid, "rev2_ladder_acid.wav",
+                          busy="Simulating the ladder, note by note…")
+@when("click", "#lad-dl")
+def _(e): download()
+
+@when("click", "#fld-play")
+async def _(e): await run(render_folder, "rev2_wavefolder.wav")
+@when("click", "#fld-dl")
+def _(e): download()
+
+@when("click", "#vca-play")
+async def _(e): await run(render_vca, "rev2_vca_ring.wav")
+@when("click", "#vca-dl")
+def _(e): download()
+
+@when("click", "#nz-play")
+async def _(e): await run(render_noise, "rev2_noise.wav")
+@when("click", "#nz-dl")
+def _(e): download()
+
+@when("click", "#dr-hit")
+async def _(e): await run(render_drum_hit, "rev2_drum.wav")
+@when("click", "#dr-pat")
+async def _(e): await run(render_drum_groove, "rev2_drum_groove.wav")
+@when("click", "#dr-dl")
+def _(e): download()
+
+@when("click", "#bbd-play")
+async def _(e): await run(render_bbd, "rev2_bbd.wav",
+                          busy="Clocking 1024 buckets…")
+@when("click", "#bbd-dl")
+def _(e): download()
+
+@when("click", "#chu-play")
+async def _(e): await run(render_chua, "rev2_chua.wav",
+                          busy="Integrating the attractor…")
+@when("click", "#chu-dl")
+def _(e): download()
+
+@when("click", "#lun-play")
+async def _(e): await run(render_lunetta, "rev2_lunetta.wav")
+@when("click", "#lun-dl")
+def _(e): download()
+
+@when("click", "#fp-play")
+async def _(e): await run(render_fullpatch, "rev2_full_voice.wav",
+                          busy="Simulating the whole voice chain — a moment…")
+@when("click", "#fp-dl")
+def _(e): download()
+
+
+# --- boot ---
+upd_all()
+q("#boot").style.display = "none"
+status("Python ready — pick a circuit and press ▶", "")
+</script>
+</body>
+</html>

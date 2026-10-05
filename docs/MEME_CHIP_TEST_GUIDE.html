@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meme Chip — Hookup, Test &amp; PUF Characterization Guide</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f6f7f9;
+    --fg: #1a1d21;
+    --muted: #5c6470;
+    --border: #d9dde3;
+    --accent: #b45309;
+    --code-bg: #f2f4f7;
+    --warn-bg: #fef3e7;
+    --warn-border: #f0c48a;
+
+    /* pad-category fills */
+    --c-clk: #2563eb;
+    --c-rst: #d97706;
+    --c-bid: #059669;
+    --c-gnd: #6b7280;
+    --c-vdd: #dc2626;
+    --c-tap: #7c3aed;
+    --c-vhi: #f59e0b;
+    --c-vlo: #0891b2;
+    /* pad-category label text (darkened where the fill is too light on white) */
+    --t-clk: #2563eb;
+    --t-rst: #b45309;
+    --t-bid: #047857;
+    --t-gnd: #4b5563;
+    --t-vdd: #b91c1c;
+    --t-tap: #6d28d9;
+    --t-vhi: #92400e;
+    --t-vlo: #155e75;
+
+    --die-fill: #fbfaf7;
+    --coin: #eab308;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --bg2: #1d2026;
+      --fg: #e6e8eb;
+      --muted: #9aa3ae;
+      --border: #343943;
+      --accent: #fbbf24;
+      --code-bg: #22262e;
+      --warn-bg: #2c2417;
+      --warn-border: #6b5426;
+
+      --c-clk: #60a5fa;
+      --c-rst: #fbbf24;
+      --c-bid: #34d399;
+      --c-gnd: #9ca3af;
+      --c-vdd: #f87171;
+      --c-tap: #a78bfa;
+      --c-vhi: #fcd34d;
+      --c-vlo: #22d3ee;
+      --t-clk: #60a5fa;
+      --t-rst: #fbbf24;
+      --t-bid: #34d399;
+      --t-gnd: #9ca3af;
+      --t-vdd: #f87171;
+      --t-tap: #a78bfa;
+      --t-vhi: #fcd34d;
+      --t-vlo: #22d3ee;
+
+      --die-fill: #1a1c22;
+      --coin: #ca9a04;
+    }
+  }
+
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1060px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 1.35rem; margin: 2.6em 0 0.6em; padding-top: 0.6em; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.08rem; margin: 1.8em 0 0.5em; }
+  p, li { max-width: 78ch; }
+  a { color: var(--t-clk); }
+
+  .subtitle { color: var(--muted); margin: 0 0 18px; max-width: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+  .chip {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 999px;
+    padding: 3px 13px; font-size: 0.85rem; color: var(--fg); white-space: nowrap;
+  }
+  .chip b { color: var(--accent); }
+
+  table { border-collapse: collapse; margin: 14px 0; font-size: 0.92rem; }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--border); padding: 5px 11px; text-align: left; vertical-align: top; }
+  th { background: var(--bg2); }
+  td code, th code { white-space: nowrap; }
+
+  code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; }
+
+  figure { margin: 22px 0; }
+  .figbox {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; overflow-x: auto;
+  }
+  figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 8px; max-width: 88ch; }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 2px; font-size: 0.85rem; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .sw { display: inline-block; width: 13px; height: 13px; border-radius: 3px; border: 1px solid var(--border); }
+
+  .callout {
+    background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 8px;
+    padding: 10px 16px; margin: 16px 0; max-width: 84ch;
+  }
+  .callout b:first-child { color: var(--accent); }
+
+  /* pad map category styling */
+  .pad rect { stroke: none; }
+  .pad.clk rect { fill: var(--c-clk); }  .pad.clk text { fill: var(--t-clk); }
+  .pad.rst rect { fill: var(--c-rst); }  .pad.rst text { fill: var(--t-rst); }
+  .pad.bid rect { fill: var(--c-bid); }  .pad.bid text { fill: var(--t-bid); }
+  .pad.gnd rect { fill: var(--c-gnd); }  .pad.gnd text { fill: var(--t-gnd); }
+  .pad.vdd rect { fill: var(--c-vdd); }  .pad.vdd text { fill: var(--t-vdd); }
+  .pad.tap rect { fill: var(--c-tap); }  .pad.tap text { fill: var(--t-tap); }
+  .pad.vhi rect { fill: var(--c-vhi); stroke: var(--fg); stroke-width: 10; }
+  .pad.vhi text { fill: var(--t-vhi); font-weight: 700; }
+  .pad.vlo rect { fill: var(--c-vlo); stroke: var(--fg); stroke-width: 10; }
+  .pad.vlo text { fill: var(--t-vlo); font-weight: 700; }
+
+  .wire-vhi { stroke: var(--c-vhi); } .wire-vlo { stroke: var(--c-vlo); }
+  .wire-tap { stroke: var(--c-tap); } .wire-gnd { stroke: var(--c-gnd); }
+  .box { fill: var(--bg); stroke: var(--fg); stroke-width: 1.6; }
+  .lbl { fill: var(--fg); font-size: 14px; }
+  .lbl-s { fill: var(--muted); font-size: 12px; }
+  .wire { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+  .thin { fill: none; stroke: var(--fg); stroke-width: 1.6; stroke-linecap: round; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Meme Chip — Hookup, Test &amp; PUF Characterization Guide</h1>
+<p class="subtitle">Bring-up manual for the <code>meme</code> branch chip (wafer.space GF180MCU, slot <code>1x0p5</code>):
+the doge-art die with a 48-tap passive analog PUF that makes every fabricated part a unique, unclonable “NFT”.</p>
+
+<div class="chips">
+  <span class="chip">die <b>3932 × 2531 µm</b></span>
+  <span class="chip"><b>72</b> pads (50 analog)</span>
+  <span class="chip"><b>48</b> PUF taps</span>
+  <span class="chip">~<b>240</b> bits of fingerprint</span>
+  <span class="chip">one <b>5 V</b> domain</span>
+  <span class="chip">PUF reads <b>unpowered</b></span>
+</div>
+
+<p>What’s on the chip:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Thing</th><th>What it is</th><th>How you test it</th></tr>
+  <tr><td>The doge</td><td>Metal halftone art on all 5 metal layers, fills the core</td>
+      <td>Microscope. Captions legible; a dickbutt hides in the glint of the right eye’s pupil</td></tr>
+  <tr><td>Wow counter</td><td>26-bit free counter, 4 blinker outputs</td>
+      <td>Power + clock + reset → watch 4 pads blink (§5)</td></tr>
+  <tr><td>Analog PUF</td><td>48 passive poly-resistor dividers hidden in the dogecoin medallions</td>
+      <td>Force 1 V across 2 rail pads, meter 48 tap pads. No power needed (§3–4)</td></tr>
+</table>
+</div>
+<p>Everything is one 5 V domain. The PUF is completely passive — it can (and should) be read with the chip <b>unpowered</b>.</p>
+
+<h2 id="s1">1. Die orientation and pad numbering</h2>
+
+<p>Hold the die with the doge upright (captions readable). The map below is generated to scale from the
+signoff pad coordinates — hover any pad for its edge number, net name and function.</p>
+
+<div class="legend">
+  <span><i class="sw" style="background:var(--c-vhi)"></i> Vhi force rail</span>
+  <span><i class="sw" style="background:var(--c-vlo)"></i> Vlo force rail</span>
+  <span><i class="sw" style="background:var(--c-tap)"></i> PUF tap (t0–t47)</span>
+  <span><i class="sw" style="background:var(--c-vdd)"></i> +5 V (DVDD/VDD)</span>
+  <span><i class="sw" style="background:var(--c-gnd)"></i> Ground (DVSS/VSS)</span>
+  <span><i class="sw" style="background:var(--c-clk)"></i> Clock</span>
+  <span><i class="sw" style="background:var(--c-rst)"></i> Reset</span>
+  <span><i class="sw" style="background:var(--c-bid)"></i> Blinker out</span>
+  <span><i class="sw" style="background:var(--coin)"></i> Medallion cluster (PUF resistors)</span>
+</div>
+
+<figure>
+  <div class="figbox" id="padmap-box"><svg id="padmap" viewBox="-830 -470 5600 3620" role="img"
+      aria-label="To-scale map of the die with all 72 pads on four edges, color-coded by function"></svg></div>
+  <figcaption>Die map, doge upright. Pad positions are die-µm centers (origin = bottom-left corner), all pads 75 µm wide.
+  Taps are labeled <code>t0…t47</code>; tap <code>t<sub>k</sub></code> lives on pad <code>analog[k+2]</code>.
+  The gold coins mark the six medallion clusters that hide the PUF resistors (§2).
+  If your parts come packaged, map these die pads to package pins with the wafer.space <code>1x0p5</code> bond-out sheet —
+  the per-edge order here is the ground truth.</figcaption>
+</figure>
+
+<h3>South edge (left → right)</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>#</th><th>Pad</th><th>x center</th><th>Function</th></tr>
+  <tr><td>1</td><td><code>clk</code></td><td>482.5</td><td>Clock input (Schmitt trigger, 5 V CMOS)</td></tr>
+  <tr><td>2</td><td><code>rst_n</code></td><td>611.5</td><td>Active-low sync reset (no internal pull — must drive)</td></tr>
+  <tr><td>3</td><td><code>bidir[0]</code></td><td>740.5</td><td>Blinker out ~0.37 Hz @ 25 MHz clk</td></tr>
+  <tr><td>4</td><td><code>bidir[1]</code></td><td>869.5</td><td>Blinker out ~0.75 Hz</td></tr>
+  <tr><td>5</td><td><code>DVSS</code></td><td>998.5</td><td>Ground</td></tr>
+  <tr><td>6</td><td><code>DVDD</code></td><td>1127.5</td><td>+5 V</td></tr>
+  <tr><td>7</td><td><code>bidir[2]</code></td><td>1256.5</td><td>Blinker out ~1.5 Hz</td></tr>
+  <tr><td>8</td><td><code>bidir[3]</code></td><td>1385.5</td><td>Blinker out ~3 Hz</td></tr>
+  <tr><td>9–18</td><td><code>analog[8..17]</code></td><td>1514.5 … 2675.5 (pitch 129)</td><td>PUF taps t6–t15</td></tr>
+  <tr><td>19</td><td><code>DVSS</code></td><td>2804.5</td><td>Ground</td></tr>
+  <tr><td>20</td><td><code>DVDD</code></td><td>2933.5</td><td>+5 V</td></tr>
+  <tr><td>21–24</td><td><code>analog[18..21]</code></td><td>3062.5 … 3449.5</td><td>PUF taps t16–t19</td></tr>
+</table>
+</div>
+
+<h3>West edge (bottom → top)</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>#</th><th>Pad</th><th>y center</th><th>Function</th></tr>
+  <tr><td>1</td><td><code>VSS</code></td><td>490</td><td>Core ground</td></tr>
+  <tr><td>2</td><td><code>VDD</code></td><td>631</td><td>Core +5 V</td></tr>
+  <tr><td>3</td><td><code>analog[0]</code></td><td>772</td><td><b>PUF Vhi force rail</b></td></tr>
+  <tr><td>4</td><td><code>analog[1]</code></td><td>913</td><td><b>PUF Vlo force rail</b></td></tr>
+  <tr><td>5–10</td><td><code>analog[2..7]</code></td><td>1054 … 1759 (pitch 141)</td><td>PUF taps t0–t5</td></tr>
+  <tr><td>11</td><td><code>DVSS</code></td><td>1900</td><td>Ground</td></tr>
+  <tr><td>12</td><td><code>DVDD</code></td><td>2041</td><td>+5 V</td></tr>
+</table>
+</div>
+
+<h3>East edge (bottom → top)</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>#</th><th>Pad</th><th>y center</th><th>Function</th></tr>
+  <tr><td>1</td><td><code>DVSS</code></td><td>490</td><td>Ground</td></tr>
+  <tr><td>2</td><td><code>DVDD</code></td><td>631</td><td>+5 V</td></tr>
+  <tr><td>3–10</td><td><code>analog[22..29]</code></td><td>772 … 1759 (pitch 141)</td><td>PUF taps t20–t27</td></tr>
+  <tr><td>11</td><td><code>DVSS</code></td><td>1900</td><td>Ground</td></tr>
+  <tr><td>12</td><td><code>DVDD</code></td><td>2041</td><td>+5 V</td></tr>
+</table>
+</div>
+
+<h3>North edge (left → right)</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>#</th><th>Pad</th><th>x center</th><th>Function</th></tr>
+  <tr><td>1–4</td><td><code>analog[30..33]</code></td><td>482.5 … 869.5 (pitch 129)</td><td>PUF taps t28–t31</td></tr>
+  <tr><td>5</td><td><code>DVSS</code></td><td>998.5</td><td>Ground</td></tr>
+  <tr><td>6</td><td><code>DVDD</code></td><td>1127.5</td><td>+5 V</td></tr>
+  <tr><td>7–18</td><td><code>analog[34..45]</code></td><td>1256.5 … 2675.5</td><td>PUF taps t32–t43</td></tr>
+  <tr><td>19</td><td><code>DVSS</code></td><td>2804.5</td><td>Ground</td></tr>
+  <tr><td>20</td><td><code>DVDD</code></td><td>2933.5</td><td>+5 V</td></tr>
+  <tr><td>21–24</td><td><code>analog[46..49]</code></td><td>3062.5 … 3449.5</td><td>PUF taps t44–t47</td></tr>
+</table>
+</div>
+
+<p><b>Rule of thumb:</b> tap number <code>t_k</code> lives on pad <code>analog[k+2]</code>.
+<code>analog[0]</code> = Vhi, <code>analog[1]</code> = Vlo, both on the west edge just above the VSS/VDD pair.</p>
+
+<p>Power summary: 7 × DVDD + 1 × VDD → tie <b>all</b> to +5 V. 7 × DVSS + 1 × VSS → tie <b>all</b> to 0 V.
+(In this chip I/O and core are the same 5 V domain.)</p>
+
+<h2 id="s2">2. PUF architecture (what you’re measuring)</h2>
+
+<p>Each of the 48 taps is the midpoint of an identical 2-resistor divider hanging across the shared Vhi/Vlo rails:</p>
+
+<figure>
+  <div class="figbox">
+  <svg viewBox="0 0 720 370" role="img" aria-label="Schematic: 48 identical two-resistor dividers in parallel across the Vhi and Vlo rails; each midpoint is a tap pad">
+    <!-- rails -->
+    <line x1="120" y1="60"  x2="560" y2="60"  class="wire wire-vhi"/>
+    <line x1="120" y1="310" x2="560" y2="310" class="wire wire-vlo"/>
+    <text x="112" y="65"  text-anchor="end" class="lbl" style="fill:var(--t-vhi);font-weight:700">Vhi — analog[0]</text>
+    <text x="112" y="315" text-anchor="end" class="lbl" style="fill:var(--t-vlo);font-weight:700">Vlo — analog[1]</text>
+
+    <!-- ghost dividers -->
+    <g opacity="0.3">
+      <g class="thin">
+        <line x1="180" y1="60" x2="180" y2="95"/><rect x="166" y="95" width="28" height="62" fill="none"/>
+        <line x1="180" y1="157" x2="180" y2="213"/><rect x="166" y="213" width="28" height="62" fill="none"/>
+        <line x1="180" y1="275" x2="180" y2="310"/>
+        <line x1="280" y1="60" x2="280" y2="95"/><rect x="266" y="95" width="28" height="62" fill="none"/>
+        <line x1="280" y1="157" x2="280" y2="213"/><rect x="266" y="213" width="28" height="62" fill="none"/>
+        <line x1="280" y1="275" x2="280" y2="310"/>
+        <line x1="380" y1="60" x2="380" y2="95"/><rect x="366" y="95" width="28" height="62" fill="none"/>
+        <line x1="380" y1="157" x2="380" y2="213"/><rect x="366" y="213" width="28" height="62" fill="none"/>
+        <line x1="380" y1="275" x2="380" y2="310"/>
+      </g>
+      <circle cx="180" cy="185" r="4" fill="var(--fg)"/>
+      <circle cx="280" cy="185" r="4" fill="var(--fg)"/>
+      <circle cx="380" cy="185" r="4" fill="var(--fg)"/>
+    </g>
+    <text x="435" y="190" class="lbl-s">…</text>
+
+    <!-- main divider -->
+    <g class="thin">
+      <line x1="500" y1="60" x2="500" y2="95"/>
+      <rect x="484" y="95" width="32" height="62" fill="none" stroke-width="2"/>
+      <line x1="500" y1="157" x2="500" y2="213"/>
+      <rect x="484" y="213" width="32" height="62" fill="none" stroke-width="2"/>
+      <line x1="500" y1="275" x2="500" y2="310"/>
+    </g>
+    <circle cx="500" cy="60"  r="5" fill="var(--fg)"/>
+    <circle cx="500" cy="310" r="5" fill="var(--fg)"/>
+    <circle cx="500" cy="185" r="6" fill="var(--c-tap)"/>
+    <line x1="500" y1="185" x2="640" y2="185" class="wire wire-tap"/>
+    <polygon points="640,185 626,178 626,192" fill="var(--c-tap)"/>
+    <text x="648" y="176" class="lbl" style="fill:var(--t-tap);font-weight:700" text-anchor="end">tap t<tspan baseline-shift="sub" font-size="10">k</tspan></text>
+    <text x="648" y="200" class="lbl-s" text-anchor="end">analog[k+2]</text>
+
+    <text x="476" y="122" text-anchor="end" class="lbl">R_top ≈ 3.5 kΩ</text>
+    <text x="476" y="240" text-anchor="end" class="lbl">R_bot ≈ 3.5 kΩ</text>
+
+    <text x="120" y="30" class="lbl-s">48 identical dividers in parallel → rail-to-rail ≈ 146 Ω nominal (plus tens of Ω of on-die rail metal)</text>
+    <text x="120" y="348" class="lbl-s">ppolyf_u P+ unsalicided poly, W 0.8 µm × L 8 µm, ~350 Ω/sq · ±20 % global spread · ~0.1–1 % local mismatch = the fingerprint</text>
+  </svg>
+  </div>
+  <figcaption>One PUF cell. All 48 dividers hang in parallel across the shared force rails; the fingerprint is the tiny
+  random mismatch between R_top and R_bot of each divider, read out at the midpoint.</figcaption>
+</figure>
+
+<ul>
+  <li>Resistors: <code>ppolyf_u</code> P+ unsalicided poly, W 0.8 µm × L 8 µm, ~350 Ω/sq → ~3.5 kΩ nominal each, ±20 % global process spread.</li>
+  <li>All 48 dividers in parallel across the shared Vhi/Vlo rails (~7 kΩ / 48 ≈ <b>146 Ω</b> nominal rail-to-rail, plus a few tens of ohms of on-die rail metal).</li>
+  <li>The dividers sit in 6 clusters of 8 hidden inside the doge’s dogecoin medallions (gold coins on the die map in §1); connectivity of all 50 nets is LVS-verified in signoff.</li>
+</ul>
+
+<p>The fingerprint is the <b>local random mismatch</b> between R_top and R_bot of each divider. The divider ratio</p>
+<pre><code>r_k = (V_tap_k − Vlo) / (Vhi − Vlo)   ≈ 0.5 ± layout offset ± die mismatch</code></pre>
+<p>cancels the global ±20 % process spread and first-order temperature drift — only the per-die random mismatch
+(order 0.1–1 %, i.e. roughly 0.5–10 mV at 1 V force) plus a <b>fixed per-tap layout offset</b> (rail IR drop and
+strap asymmetry, identical on every die) survives. You remove the layout offset by subtracting the per-tap average
+over your chip population; what’s left is the unclonable per-die fingerprint, ~4–5 usable bits per tap, ~240 bits total.</p>
+
+<p>Tap ↔ medallion cluster map (for die probing / debugging — locations are drawn on the die map in §1):</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Cluster</th><th>Die location (LL, µm)</th><th>Taps</th></tr>
+  <tr><td>R1</td><td>(680, 1113) west side</td><td>t0–t3, t6–t9</td></tr>
+  <tr><td>R2</td><td>(760, 1594) west side</td><td>t4, t5, t10–t15</td></tr>
+  <tr><td>R5</td><td>(3190, 680) east side</td><td>t16–t23</td></tr>
+  <tr><td>R6</td><td>(3140, 1130) east side</td><td>t28–t35</td></tr>
+  <tr><td>R4</td><td>(3200, 1487) east side</td><td>t24–t27, t44–t47</td></tr>
+  <tr><td>R3</td><td>(3100, 1842) east side</td><td>t36–t43</td></tr>
+</table>
+</div>
+
+<h2 id="s3">3. PUF readout hookup</h2>
+
+<div class="callout"><b>⚠ No ESD clamps.</b> The analog pads are bare feed-throughs. Use a wrist strap,
+ground your bench, and touch the pads only with proper probes.</div>
+
+<figure>
+  <div class="figbox">
+  <svg viewBox="0 0 980 500" role="img" aria-label="Wiring diagram: bench PSU forces 1 volt across Vhi and Vlo; a DMM measures each tap against the Vlo pad; sensing is done at the pads (Kelvin)">
+    <!-- chip -->
+    <rect x="640" y="30" width="300" height="420" rx="10" class="box"/>
+    <text x="790" y="62" text-anchor="middle" class="lbl" font-weight="700">meme chip</text>
+    <text x="790" y="82" text-anchor="middle" class="lbl-s">(unpowered)</text>
+    <!-- chip pads -->
+    <rect x="630" y="107" width="20" height="20" fill="var(--c-vhi)" stroke="var(--fg)" stroke-width="1.4"/>
+    <text x="662" y="122" class="lbl" style="fill:var(--t-vhi);font-weight:700">analog[0] — Vhi</text>
+    <rect x="630" y="162" width="20" height="20" fill="var(--c-vlo)" stroke="var(--fg)" stroke-width="1.4"/>
+    <text x="662" y="177" class="lbl" style="fill:var(--t-vlo);font-weight:700">analog[1] — Vlo</text>
+    <rect x="630" y="298" width="20" height="20" fill="var(--c-tap)"/>
+    <rect x="634" y="322" width="16" height="10" fill="var(--c-tap)" opacity="0.55"/>
+    <rect x="634" y="336" width="16" height="10" fill="var(--c-tap)" opacity="0.3"/>
+    <text x="662" y="313" class="lbl" style="fill:var(--t-tap)">analog[2..49]</text>
+    <text x="662" y="333" class="lbl-s">= taps t0..t47</text>
+    <rect x="630" y="405" width="20" height="20" fill="var(--c-gnd)"/>
+    <text x="662" y="420" class="lbl" style="fill:var(--t-gnd)">DVSS</text>
+
+    <!-- PSU -->
+    <rect x="30" y="60" width="240" height="120" rx="10" class="box"/>
+    <text x="150" y="95" text-anchor="middle" class="lbl" font-weight="700">Bench PSU / SMU</text>
+    <text x="150" y="118" text-anchor="middle" class="lbl-s">1.000 V · I-limit 20 mA</text>
+    <text x="256" y="122" text-anchor="end" class="lbl" font-weight="700">+</text>
+    <text x="256" y="165" text-anchor="end" class="lbl" font-weight="700">−</text>
+    <!-- force wires -->
+    <line x1="270" y1="117" x2="630" y2="117" class="wire wire-vhi"/>
+    <line x1="270" y1="160" x2="450" y2="160" class="wire wire-vlo"/>
+    <line x1="450" y1="160" x2="450" y2="172" class="wire wire-vlo"/>
+    <line x1="450" y1="172" x2="630" y2="172" class="wire wire-vlo"/>
+    <text x="330" y="105" class="lbl-s">force: 5.5–9 mA flows here</text>
+    <polygon points="420,117 404,110 404,124" fill="var(--c-vhi)"/>
+
+    <!-- DMM -->
+    <rect x="30" y="280" width="240" height="120" rx="10" class="box"/>
+    <text x="150" y="315" text-anchor="middle" class="lbl" font-weight="700">DMM</text>
+    <text x="150" y="338" text-anchor="middle" class="lbl-s">5½ digits (10 µV) or</text>
+    <text x="150" y="356" text-anchor="middle" class="lbl-s">average many readings</text>
+    <text x="256" y="322" text-anchor="end" class="lbl" font-weight="700">+</text>
+    <text x="256" y="385" text-anchor="end" class="lbl" font-weight="700">−</text>
+    <!-- sense wires -->
+    <g stroke-dasharray="7 6">
+      <line x1="270" y1="317" x2="600" y2="317" class="wire wire-tap"/>
+      <line x1="600" y1="317" x2="622" y2="309" class="wire wire-tap"/>
+    </g>
+    <circle cx="627" cy="308" r="6" fill="none" stroke="var(--c-tap)" stroke-width="2.4"/>
+    <text x="300" y="342" class="lbl-s">probe roams across the 48 tap pads</text>
+    <line x1="270" y1="380" x2="500" y2="380" class="wire wire-vlo"/>
+    <line x1="500" y1="380" x2="500" y2="172" class="wire wire-vlo"/>
+    <circle cx="500" cy="172" r="5" fill="var(--c-vlo)"/>
+    <text x="512" y="250" class="lbl-s">sense Vlo AT THE PAD</text>
+    <text x="512" y="268" class="lbl-s">(Kelvin — not at the supply)</text>
+
+    <!-- optional substrate tie -->
+    <g stroke-dasharray="4 5">
+      <line x1="565" y1="415" x2="630" y2="415" class="wire wire-gnd"/>
+      <line x1="565" y1="415" x2="565" y2="455" class="wire wire-gnd"/>
+    </g>
+    <g stroke="var(--c-gnd)" stroke-width="2.4">
+      <line x1="547" y1="455" x2="583" y2="455"/>
+      <line x1="553" y1="463" x2="577" y2="463"/>
+      <line x1="559" y1="471" x2="571" y2="471"/>
+    </g>
+    <text x="535" y="463" text-anchor="end" class="lbl-s">optional: tie one DVSS</text>
+    <text x="535" y="481" text-anchor="end" class="lbl-s">to bench ground</text>
+  </svg>
+  </div>
+  <figcaption>Readout hookup. Chip unpowered; PSU forces 1.000 V across the two west-edge rail pads; the DMM measures
+  each tap against the Vlo <em>pad</em>. The force leads carry ~7 mA, so 1 Ω of contact resistance = 7 mV of error —
+  sense at the pads, or use a 4-wire SMU.</figcaption>
+</figure>
+
+<p>Setup:</p>
+<ol>
+  <li><b>Chip unpowered.</b> Optionally tie one DVSS pad to bench ground so the substrate doesn’t float.
+      Keep Vhi/Vlo between 0 and +5 V relative to it.</li>
+  <li><b>Force:</b> 1.000 V from a bench supply or SMU across <code>analog[0]</code> (Vhi, +) and
+      <code>analog[1]</code> (Vlo, −). Current limit 20 mA. Expect <b>5.5–9 mA</b> to flow (all 48 dividers in
+      parallel; the exact value tracks the ±20 % global sheet-resistance lot spread — it is itself a coarse process
+      readout). Don’t force much above 2 V: at 1 V each divider dissipates only ~0.14 mW (negligible self-heating)
+      and current density in the 0.8 µm poly is comfortable; at 5 V you’re near ~1 mA per 0.8 µm bar for no
+      fingerprint benefit (mismatch is a <em>ratio</em> — 1 V is plenty).</li>
+  <li><b>Sense the rails at the pads</b>, not at the supply: the force leads carry ~7 mA, so 1 Ω of contact
+      resistance = 7 mV of error. Either use a 4-wire SMU with sense leads on the pads, or measure
+      <code>V(analog[0])</code> and <code>V(analog[1])</code> with the same DMM/probe you use for the taps and use
+      those values as Vhi/Vlo in the math.</li>
+  <li><b>Meter each tap</b> <code>analog[2] … analog[49]</code> to the Vlo sense point. Tap source impedance is
+      ~1.75 kΩ, so even a 10 MΩ DMM adds only ~0.02 % (systematic, common to all taps — it cancels in the
+      population-mean subtraction). High-Z mode (&gt;1 GΩ) is nicer but not required.
+      <b>Resolution matters more than impedance:</b> the die-to-die signal is single-digit millivolts, so use a
+      5½-digit DMM (10 µV) or average many 4½-digit readings.</li>
+</ol>
+
+<p>For characterizing more than a couple of chips, build a jig: 3 × 16:1 analog mux (e.g. CD74HC4067, powered from
+a clean 5 V, address lines from any MCU) between the 48 tap pins and one DMM input. The taps are hi-Z sense lines,
+so mux on-resistance (~70 Ω against a 10 MΩ meter) is irrelevant.</p>
+
+<h3>Continuity / bonding sanity check (do this first, per chip)</h3>
+<p>With an ohmmeter (chip unpowered, PSU disconnected):</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Measurement</th><th>Expect</th><th>Meaning if open/way off</th></tr>
+  <tr><td><code>analog[0]</code> ↔ <code>analog[1]</code></td><td>~150–250 Ω</td><td>Broken Vhi or Vlo bond — chip unreadable</td></tr>
+  <tr><td>any tap ↔ <code>analog[0]</code></td><td>~1.8–2.4 kΩ</td><td>That tap’s bond or divider is broken</td></tr>
+  <tr><td>any tap ↔ <code>analog[1]</code></td><td>~1.8–2.4 kΩ</td><td>Same</td></tr>
+  <tr><td>any analog pad ↔ <code>DVSS</code></td><td>open (&gt;10 MΩ)</td><td>Short — bad die/bond</td></tr>
+</table>
+</div>
+
+<h2 id="s4">4. PUF measurement &amp; characterization procedure</h2>
+
+<figure>
+  <div class="figbox">
+  <svg viewBox="0 0 960 330" role="img" aria-label="Data flow: measured tap voltages become ratios, the per-tap population mean is subtracted to form the fingerprint, which is hashed into a token ID and compared for authentication">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--fg)"/>
+      </marker>
+    </defs>
+    <g class="box">
+      <rect x="20"  y="40" width="180" height="86" rx="8"/>
+      <rect x="252" y="40" width="180" height="86" rx="8"/>
+      <rect x="484" y="40" width="180" height="86" rx="8"/>
+      <rect x="716" y="40" width="200" height="86" rx="8" stroke="var(--c-tap)" stroke-width="2.6"/>
+      <rect x="410" y="210" width="220" height="86" rx="8"/>
+      <rect x="686" y="210" width="250" height="86" rx="8"/>
+    </g>
+    <g class="lbl">
+      <text x="110" y="72" text-anchor="middle" font-weight="700">measure</text>
+      <text x="110" y="94" text-anchor="middle" class="lbl-s">Vhi, Vlo, V_t0..t47</text>
+      <text x="110" y="112" text-anchor="middle" class="lbl-s">5–10 sweeps, averaged</text>
+      <text x="342" y="72" text-anchor="middle" font-weight="700">ratios</text>
+      <text x="342" y="96" text-anchor="middle" class="lbl-s">r_k = (V_k−Vlo)/(Vhi−Vlo)</text>
+      <text x="574" y="72" text-anchor="middle" font-weight="700">subtract µ_k</text>
+      <text x="574" y="94" text-anchor="middle" class="lbl-s">per-tap population mean</text>
+      <text x="574" y="112" text-anchor="middle" class="lbl-s">(= fixed layout offset)</text>
+      <text x="816" y="72" text-anchor="middle" font-weight="700" fill="var(--t-tap)">fingerprint d_k</text>
+      <text x="816" y="94" text-anchor="middle" class="lbl-s">48 deviations,</text>
+      <text x="816" y="112" text-anchor="middle" class="lbl-s">a few ×0.1 % each</text>
+      <text x="520" y="242" text-anchor="middle" font-weight="700">token ID (public)</text>
+      <text x="520" y="264" text-anchor="middle" class="lbl-s">quantize 0.05 % bins</text>
+      <text x="520" y="282" text-anchor="middle" class="lbl-s">→ SHA-256 → 16 hex</text>
+      <text x="811" y="242" text-anchor="middle" font-weight="700">authenticate</text>
+      <text x="811" y="264" text-anchor="middle" class="lbl-s">re-read → compare vectors:</text>
+      <text x="811" y="282" text-anchor="middle" class="lbl-s">genuine if max|Δd_k| &lt; ~5·σ_meas</text>
+    </g>
+    <g fill="none" stroke="var(--fg)" stroke-width="2" marker-end="url(#arr)">
+      <line x1="200" y1="83" x2="244" y2="83"/>
+      <line x1="432" y1="83" x2="476" y2="83"/>
+      <line x1="664" y1="83" x2="708" y2="83"/>
+      <path d="M760,126 C700,170 620,190 560,204"/>
+      <path d="M830,126 C838,155 828,180 816,204"/>
+    </g>
+    <text x="340" y="188" class="lbl-s">keep the hash only as the public “token ID”;</text>
+    <text x="340" y="206" class="lbl-s">the raw vector is the authentication record</text>
+  </svg>
+  </div>
+  <figcaption>From volts to NFT. Raw ratios are <em>not</em> the fingerprint — every die shares the same per-tap layout
+  offset µ<sub>k</sub>, so subtract the population mean first. What remains is the per-die random mismatch.</figcaption>
+</figure>
+
+<h3>Per-chip read (enrollment)</h3>
+<ol>
+  <li>Note chip serial (write one on the package/carrier), temperature.</li>
+  <li>Hook up as in §3, force 1.000 V.</li>
+  <li>Record <code>Vhi</code>, <code>Vlo</code> (sensed at pads), then <code>V[0..47]</code> for taps t0–t47.</li>
+  <li>Compute the 48 ratios <code>r_k = (V_k − Vlo) / (Vhi − Vlo)</code>.</li>
+  <li><b>Repeat the full sweep 5–10×</b> (re-probe included) and average. The per-tap standard deviation across
+      repeats is your measurement noise <code>σ_meas</code> — record it; it sets how many bits each tap is worth.</li>
+  <li>Optional self-check: swap the force polarity (Vhi ↔ Vlo). Each ratio must come back as <code>1 − r_k</code>
+      within noise. If not, you have a sensing problem.</li>
+</ol>
+
+<p>Store one CSV row per read:</p>
+<pre><code>chip_id, read_n, temp_C, vhi, vlo, v_t0, v_t1, ..., v_t47</code></pre>
+
+<h3>Population characterization (turns readings into fingerprints)</h3>
+<p>After you’ve enrolled several chips:</p>
+<ol>
+  <li>Per tap, compute the population mean <code>µ_k</code> over all chips. This is the fixed layout offset
+      (rail IR drop etc.) — the same on every die.</li>
+  <li>Each chip’s fingerprint is the deviation vector <code>d_k = r_k − µ_k</code>, 48 values, typically a few ×0.1 % each.</li>
+  <li>Quality metrics to check:
+    <ul>
+      <li><b>Repeatability (same chip):</b> RMS of <code>d_k</code> across re-reads ≪ spread across chips.
+          Aim for σ_meas at least 4–8× smaller than σ_pop.</li>
+      <li><b>Uniqueness (across chips):</b> per-tap <code>d_k</code> should look zero-mean random across chips; any
+          two chips’ fingerprint vectors should differ wildly (correlation ≈ 0).</li>
+      <li><b>Bits per tap:</b> ≈ log2(σ_pop / σ_meas). With clean measurements expect 4–5 bits × 48 taps ≈ 200–240
+          bits — billions of billions of unique IDs for a run of thousands of chips.</li>
+    </ul>
+  </li>
+</ol>
+
+<p>Reference implementation (feed it your enrollment CSV):</p>
+<pre><code>import csv, hashlib
+from collections import defaultdict
+from statistics import mean, stdev
+
+reads = defaultdict(list)                      # chip_id -&gt; list of ratio vectors
+for row in csv.DictReader(open("puf_reads.csv")):
+    vhi, vlo = float(row["vhi"]), float(row["vlo"])
+    r = [(float(row[f"v_t{k}"]) - vlo) / (vhi - vlo) for k in range(48)]
+    reads[row["chip_id"]].append(r)
+
+chips = {cid: [mean(col) for col in zip(*rs)] for cid, rs in reads.items()}
+mu    = [mean(col) for col in zip(*chips.values())]          # layout offset
+fp    = {cid: [r - m for r, m in zip(rs, mu)] for cid, rs in chips.items()}
+
+# noise floor &amp; population spread per tap
+sig_meas = [mean(stdev(col) for col in zip(*rs)) for rs in reads.values()]
+sig_pop  = [stdev(col) for col in zip(*chips.values())]
+print("mean bits/tap ≈", mean(( (p/m).bit_length() if m else 0)
+      for p, m in zip(sig_pop, [max(s, 1e-9) for s in [mean(sig_meas)]*48])))
+
+# human-readable NFT id: quantize deviations to 0.05% bins and hash
+for cid, d in fp.items():
+    q = tuple(round(x / 5e-4) for x in d)
+    print(cid, hashlib.sha256(str(q).encode()).hexdigest()[:16])</code></pre>
+
+<p>To later <b>verify</b> a chip against its enrollment: re-read its 48 ratios, form <code>d_k</code>, and compare
+to the stored vector — genuine if <code>max|Δd_k| &lt; ~5·σ_meas</code> (equivalently, the two vectors’ correlation
+is ≈ 1). Matching raw deviation vectors is far more robust than re-deriving hashed bits; keep the hash only as the
+public “token ID” and the vector as the authentication record. Re-verify within ±10 °C of enrollment for the
+tightest margins (ratios cancel temperature to first order, but not perfectly).</p>
+
+<p>Why this is unforgeable in practice: the mismatch is set by atomic-scale poly granularity at fabrication.
+Nobody — including the original fab — can place resistors to hit 48 chosen ratios at the 0.1 % level, and the
+population entropy (~240 bits) makes a lookalike die astronomically unlikely.</p>
+
+<h2 id="s5">5. Powered test — the wow counter blinkers</h2>
+
+<p>This proves the digital side (pad ring, clock tree, reset) is alive.</p>
+
+<ol>
+  <li><b>Power:</b> all DVDD + VDD pads → +5.0 V; all DVSS + VSS pads → 0 V. 100 nF decoupling close to the chip.
+      Current draw is tiny (one 26-bit counter).</li>
+  <li><b>Clock:</b> 0–5 V square wave into <code>clk</code> (south pad 1). Anything from DC to tens of MHz works;
+      25 MHz gives the designed blink rates.</li>
+  <li><b>Reset:</b> <code>rst_n</code> (south pad 2) has <b>no internal pull</b> — it must be driven. 10 kΩ pull-up
+      to 5 V plus a push-button to ground works: hold low for a few clock edges, release. (Reset is synchronous —
+      the clock must be running for reset to take effect.)</li>
+  <li><b>Observe</b> <code>bidir[0..3]</code> (south pads 3, 4, 7, 8) with a scope, logic analyzer, or an LED +
+      ~2 kΩ to ground on each.</li>
+</ol>
+
+<figure>
+  <div class="figbox">
+  <svg viewBox="0 0 430 270" role="img" aria-label="Reset circuit: 10 kilo-ohm pull-up from rst_n to 5 volts, push-button from rst_n to ground">
+    <text x="100" y="34" text-anchor="middle" class="lbl" font-weight="700">+5 V</text>
+    <g class="thin">
+      <line x1="80" y1="42" x2="120" y2="42"/>
+      <line x1="100" y1="42" x2="100" y2="62"/>
+      <rect x="84" y="62" width="32" height="56" fill="none" stroke-width="2"/>
+      <line x1="100" y1="118" x2="100" y2="150"/>
+      <line x1="100" y1="150" x2="330" y2="150"/>
+      <line x1="100" y1="150" x2="100" y2="182"/>
+      <line x1="100" y1="218" x2="100" y2="238"/>
+    </g>
+    <text x="128" y="95" class="lbl">10 kΩ</text>
+    <circle cx="100" cy="150" r="5" fill="var(--fg)"/>
+    <polygon points="330,150 316,143 316,157" fill="var(--c-rst)"/>
+    <text x="340" y="144" text-anchor="end" class="lbl" style="fill:var(--t-rst);font-weight:700"> </text>
+    <text x="215" y="140" text-anchor="middle" class="lbl" style="fill:var(--t-rst);font-weight:700">rst_n (south pad 2)</text>
+    <!-- push-button -->
+    <circle cx="100" cy="187" r="4" fill="none" stroke="var(--fg)" stroke-width="1.6"/>
+    <circle cx="100" cy="213" r="4" fill="none" stroke="var(--fg)" stroke-width="1.6"/>
+    <line x1="88" y1="214" x2="88" y2="186" stroke="var(--fg)" stroke-width="2"/>
+    <line x1="80" y1="200" x2="88" y2="200" stroke="var(--fg)" stroke-width="2"/>
+    <text x="120" y="205" class="lbl-s">push-button</text>
+    <g stroke="var(--fg)" stroke-width="2.4">
+      <line x1="82" y1="238" x2="118" y2="238"/>
+      <line x1="88" y1="246" x2="112" y2="246"/>
+      <line x1="94" y1="254" x2="106" y2="254"/>
+    </g>
+    <text x="215" y="185" class="lbl-s">hold low a few clock edges, release</text>
+    <text x="215" y="203" class="lbl-s">(reset is synchronous — clk must run)</text>
+  </svg>
+  </div>
+  <figcaption>Driving <code>rst_n</code>: it floats otherwise, and the bidir pads may sit mid-rail.</figcaption>
+</figure>
+
+<p>Expected (blink frequency = f<sub>clk</sub> / 2<sup>26−n</sup> for blinker n):</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Pad</th><th>@ 25 MHz</th><th>@ 1 MHz</th></tr>
+  <tr><td><code>bidir[0]</code></td><td>0.37 Hz</td><td>0.015 Hz</td></tr>
+  <tr><td><code>bidir[1]</code></td><td>0.75 Hz</td><td>0.03 Hz</td></tr>
+  <tr><td><code>bidir[2]</code></td><td>1.5 Hz</td><td>0.06 Hz</td></tr>
+  <tr><td><code>bidir[3]</code></td><td>3 Hz</td><td>0.12 Hz</td></tr>
+</table>
+</div>
+
+<figure>
+  <div class="figbox"><svg id="waves" viewBox="0 0 900 320" role="img"
+      aria-label="Four square waves, each output half the frequency of its neighbor: bidir 3 at 3 hertz down to bidir 0 at 0.37 hertz"></svg></div>
+  <figcaption>What you should see (~2.7 s window at 25 MHz clock). Each output is exactly half the frequency of its
+  neighbor — four related square waves confirm the whole counter, clock path and reset in one look. Much wow.</figcaption>
+</figure>
+
+<p>The PUF can be read while the chip is powered (the dividers are passive and not connected to any logic) — just
+keep Vhi/Vlo within 0…5 V of DVSS.</p>
+
+<h2 id="s6">6. Gotchas checklist</h2>
+<ul>
+  <li><b>No ESD protection on the 50 analog pads.</b> Ground yourself. This is the most likely way to kill a PUF pad.</li>
+  <li><b>Sense the rails at the pads</b> (Kelvin). ~7 mA flows in the force path; lead/contact drops are bigger than
+      the fingerprint if you sense at the supply.</li>
+  <li><b>Millivolts matter:</b> 5½-digit DMM or heavy averaging.</li>
+  <li><b><code>rst_n</code> floats</b> — always drive or pull it when powered, or the bidir pads may sit mid-rail.</li>
+  <li><b>Don’t exceed ~2 V force</b> across Vhi/Vlo (self-heating buys nothing; ratios are amplitude-independent).</li>
+  <li>Die pad ↔ package pin mapping comes from the wafer.space <code>1x0p5</code> bond-out sheet; the per-edge order
+      in §1 is the authoritative die-side reference (extracted from <code>librelane/slots/slot_1x0p5.yaml</code> +
+      <code>ip/meme_puf/script/gen_routes_all.py</code>, LVS-verified in the final signoff run).</li>
+  <li>The fixed per-tap layout offsets mean <b>raw ratios are not the fingerprint</b> — always subtract the per-tap
+      population mean first.</li>
+</ul>
+
+<script>
+"use strict";
+
+/* ---------- die / pad-ring map, generated from signoff pad coordinates ---------- */
+
+const DIE_W = 3932, DIE_H = 2531;
+const PAD_W = 75;                  // pad width along its edge
+const PITCH_S = 129, X0_S = 482.5; // south & north
+const PITCH_W = 141, Y0_W = 490;   // west & east
+
+const range = (a, b) => Array.from({length: b - a + 1}, (_, i) => a + i);
+const P = (name, cls, desc, short) => ({name, cls, desc, short});
+const tapPad = a => P(`analog[${a}]`, "tap", `PUF tap t${a-2} (net analog[${a}])`, `t${a-2}`);
+
+const SOUTH = [
+  P("clk",      "clk", "Clock input — Schmitt trigger, 5 V CMOS"),
+  P("rst_n",    "rst", "Active-low synchronous reset — no internal pull, must be driven"),
+  P("bidir[0]", "bid", "Blinker out ~0.37 Hz @ 25 MHz clk"),
+  P("bidir[1]", "bid", "Blinker out ~0.75 Hz @ 25 MHz clk"),
+  P("DVSS",     "gnd", "Ground"),
+  P("DVDD",     "vdd", "+5 V"),
+  P("bidir[2]", "bid", "Blinker out ~1.5 Hz @ 25 MHz clk"),
+  P("bidir[3]", "bid", "Blinker out ~3 Hz @ 25 MHz clk"),
+  ...range(8, 17).map(tapPad),
+  P("DVSS", "gnd", "Ground"),
+  P("DVDD", "vdd", "+5 V"),
+  ...range(18, 21).map(tapPad),
+];
+const WEST = [
+  P("VSS", "gnd", "Core ground"),
+  P("VDD", "vdd", "Core +5 V"),
+  P("analog[0]", "vhi", "PUF Vhi force rail (+) — force 1.000 V here", "a[0] Vhi"),
+  P("analog[1]", "vlo", "PUF Vlo force rail (−)", "a[1] Vlo"),
+  ...range(2, 7).map(tapPad),
+  P("DVSS", "gnd", "Ground"),
+  P("DVDD", "vdd", "+5 V"),
+];
+const EAST = [
+  P("DVSS", "gnd", "Ground"),
+  P("DVDD", "vdd", "+5 V"),
+  ...range(22, 29).map(tapPad),
+  P("DVSS", "gnd", "Ground"),
+  P("DVDD", "vdd", "+5 V"),
+];
+const NORTH = [
+  ...range(30, 33).map(tapPad),
+  P("DVSS", "gnd", "Ground"),
+  P("DVDD", "vdd", "+5 V"),
+  ...range(34, 45).map(tapPad),
+  P("DVSS", "gnd", "Ground"),
+  P("DVDD", "vdd", "+5 V"),
+  ...range(46, 49).map(tapPad),
+];
+
+const CLUSTERS = [
+  {n: "R1", x:  680, y: 1113, taps: "t0–t3, t6–t9"},
+  {n: "R2", x:  760, y: 1594, taps: "t4, t5, t10–t15"},
+  {n: "R5", x: 3190, y:  680, taps: "t16–t23"},
+  {n: "R6", x: 3140, y: 1130, taps: "t28–t35"},
+  {n: "R4", x: 3200, y: 1487, taps: "t24–t27, t44–t47"},
+  {n: "R3", x: 3100, y: 1842, taps: "t36–t43"},
+];
+
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const sy = y => DIE_H - y;   // die y-up -> svg y-down
+
+function padG(p, num, edge, rect, label) {
+  const title = `${edge} pad ${num}: ${p.name}` + (p.desc ? " — " + p.desc : "");
+  return `<g class="pad ${p.cls}"><title>${esc(title)}</title>${rect}${label}</g>`;
+}
+
+function renderPadmap() {
+  const FS = 48;   // label font size (µm)
+  const out = [];
+
+  out.push(`<rect x="0" y="0" width="${DIE_W}" height="${DIE_H}" fill="var(--die-fill)" stroke="var(--fg)" stroke-width="10"/>`);
+  // doge watermark
+  out.push(`<text x="${DIE_W/2}" y="${DIE_H/2 - 100}" text-anchor="middle" fill="var(--muted)" opacity="0.55" font-size="120" font-weight="700">doge art fills the core</text>`);
+  out.push(`<text x="${DIE_W/2}" y="${DIE_H/2 + 60}" text-anchor="middle" fill="var(--muted)" opacity="0.55" font-size="80">(all 5 metal layers — hold captions readable = this orientation)</text>`);
+  out.push(`<text x="${DIE_W/2}" y="${DIE_H/2 + 210}" text-anchor="middle" fill="var(--muted)" opacity="0.45" font-size="64">much wow · very silicon</text>`);
+
+  // medallion clusters (LL coords; drawn as ~coin circles)
+  for (const c of CLUSTERS) {
+    const cx = c.x + 130, cy = sy(c.y + 130);
+    out.push(`<g><title>Cluster ${c.n} — LL (${c.x}, ${c.y}) µm — taps ${esc(c.taps)}</title>` +
+      `<circle cx="${cx}" cy="${cy}" r="130" fill="var(--coin)" opacity="0.5" stroke="var(--coin)" stroke-width="14"/>` +
+      `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-size="72" font-weight="700" fill="var(--fg)">${c.n}</text></g>`);
+  }
+  out.push(`<text x="${DIE_W/2}" y="${DIE_H - 220}" text-anchor="middle" fill="var(--muted)" opacity="0.6" font-size="58">gold coins = medallion clusters hiding the 48 PUF dividers (§2)</text>`);
+
+  // south edge (die bottom = svg y DIE_H), labels below, rotated
+  SOUTH.forEach((p, i) => {
+    const cx = X0_S + PITCH_S * i;
+    const rect = `<rect x="${cx - PAD_W/2}" y="${DIE_H - 58}" width="${PAD_W}" height="116"/>`;
+    const ly = DIE_H + 105;
+    const label = `<text x="${cx}" y="${ly}" transform="rotate(90 ${cx} ${ly})" font-size="${FS}" dominant-baseline="middle">${esc(p.short || p.name)}</text>`;
+    out.push(padG(p, i + 1, "South", rect, label));
+  });
+  // north edge (svg y 0), labels above, rotated the other way
+  NORTH.forEach((p, i) => {
+    const cx = X0_S + PITCH_S * i;
+    const rect = `<rect x="${cx - PAD_W/2}" y="-58" width="${PAD_W}" height="116"/>`;
+    const ly = -105;
+    const label = `<text x="${cx}" y="${ly}" transform="rotate(-90 ${cx} ${ly})" font-size="${FS}" dominant-baseline="middle">${esc(p.short || p.name)}</text>`;
+    out.push(padG(p, i + 1, "North", rect, label));
+  });
+  // west edge (svg x 0), labels left
+  WEST.forEach((p, i) => {
+    const cy = sy(Y0_W + PITCH_W * i);
+    const rect = `<rect x="-58" y="${cy - PAD_W/2}" width="116" height="${PAD_W}"/>`;
+    const label = `<text x="-105" y="${cy}" text-anchor="end" font-size="${FS}" dominant-baseline="middle">${esc(p.short || p.name)}</text>`;
+    out.push(padG(p, i + 1, "West", rect, label));
+  });
+  // east edge (svg x DIE_W), labels right
+  EAST.forEach((p, i) => {
+    const cy = sy(Y0_W + PITCH_W * i);
+    const rect = `<rect x="${DIE_W - 58}" y="${cy - PAD_W/2}" width="116" height="${PAD_W}"/>`;
+    const label = `<text x="${DIE_W + 105}" y="${cy}" font-size="${FS}" dominant-baseline="middle">${esc(p.short || p.name)}</text>`;
+    out.push(padG(p, i + 1, "East", rect, label));
+  });
+
+  // edge captions + numbering direction hints
+  out.push(`<text x="${DIE_W/2}" y="${DIE_H + 400}" text-anchor="middle" font-size="60" fill="var(--muted)">SOUTH — 24 pads, numbered left → right (pad 1 = clk, bottom-left corner)</text>`);
+  out.push(`<text x="${DIE_W/2}" y="-400" text-anchor="middle" font-size="60" fill="var(--muted)">NORTH — 24 pads, numbered left → right</text>`);
+  out.push(`<text x="-690" y="${sy(1265)}" text-anchor="middle" font-size="60" fill="var(--muted)" transform="rotate(-90 -690 ${sy(1265)})">WEST — 12 pads, numbered bottom → top</text>`);
+  out.push(`<text x="${DIE_W + 690}" y="${sy(1265)}" text-anchor="middle" font-size="60" fill="var(--muted)" transform="rotate(90 ${DIE_W + 690} ${sy(1265)})">EAST — 12 pads, numbered bottom → top</text>`);
+
+  // origin marker + scale bar
+  out.push(`<circle cx="0" cy="${DIE_H}" r="22" fill="none" stroke="var(--fg)" stroke-width="8"/>`);
+  out.push(`<text x="-320" y="${DIE_H + 330}" font-size="52" fill="var(--muted)">(0,0) origin</text>`);
+  out.push(`<g stroke="var(--fg)" stroke-width="10"><line x1="${DIE_W - 500}" y1="${DIE_H + 330}" x2="${DIE_W}" y2="${DIE_H + 330}"/>` +
+           `<line x1="${DIE_W - 500}" y1="${DIE_H + 300}" x2="${DIE_W - 500}" y2="${DIE_H + 360}"/>` +
+           `<line x1="${DIE_W}" y1="${DIE_H + 300}" x2="${DIE_W}" y2="${DIE_H + 360}"/></g>`);
+  out.push(`<text x="${DIE_W - 250}" y="${DIE_H + 440}" text-anchor="middle" font-size="52" fill="var(--muted)">500 µm</text>`);
+
+  document.getElementById("padmap").innerHTML = out.join("");
+}
+
+/* ---------- blinker waveforms ---------- */
+
+function renderWaves() {
+  const X0 = 130, W = 660, ROW = 66, AMP = 34, Y0 = 40;
+  const traces = [
+    {name: "bidir[0]", f: "0.37 Hz", cycles: 1},
+    {name: "bidir[1]", f: "0.75 Hz", cycles: 2},
+    {name: "bidir[2]", f: "1.5 Hz",  cycles: 4},
+    {name: "bidir[3]", f: "3 Hz",    cycles: 8},
+  ];
+  const out = [];
+  traces.forEach((t, i) => {
+    const yLo = Y0 + i * ROW + AMP, yHi = Y0 + i * ROW;
+    const T = W / t.cycles;
+    let d = `M ${X0} ${yLo}`;
+    for (let c = 0; c < t.cycles; c++) {
+      const xa = X0 + c * T, xb = xa + T / 2, xc = xa + T;
+      d += ` L ${xa} ${yLo} L ${xa} ${yHi} L ${xb} ${yHi} L ${xb} ${yLo} L ${xc} ${yLo}`;
+    }
+    out.push(`<path d="${d}" fill="none" stroke="var(--c-bid)" stroke-width="2.6" stroke-linejoin="round"/>`);
+    out.push(`<text x="${X0 - 14}" y="${yHi + AMP/2 + 5}" text-anchor="end" class="lbl" style="fill:var(--t-bid);font-weight:700">${t.name}</text>`);
+    out.push(`<text x="${X0 + W + 14}" y="${yHi + AMP/2 + 5}" class="lbl-s">${t.f}</text>`);
+  });
+  // time axis
+  const yAx = Y0 + traces.length * ROW + 8;
+  out.push(`<line x1="${X0}" y1="${yAx}" x2="${X0 + W}" y2="${yAx}" stroke="var(--muted)" stroke-width="1.4"/>`);
+  for (let s = 0; s <= 8; s++) {
+    const x = X0 + s * W / 8;
+    out.push(`<line x1="${x}" y1="${yAx}" x2="${x}" y2="${yAx + 7}" stroke="var(--muted)" stroke-width="1.4"/>`);
+    if (s % 2 === 0) out.push(`<text x="${x}" y="${yAx + 26}" text-anchor="middle" class="lbl-s">${(s / 3).toFixed(1).replace(/\.0$/, "")} s</text>`);
+  }
+  out.push(`<text x="${X0 + W/2}" y="${yAx + 26}" text-anchor="middle" class="lbl-s" opacity="0"> </text>`);
+  out.push(`<text x="${X0 + W}" y="${yAx + 48}" text-anchor="end" class="lbl-s">f_blink(n) = f_clk / 2^(26−n) — shown @ 25 MHz</text>`);
+  document.getElementById("waves").innerHTML = out.join("");
+}
+
+renderPadmap();
+renderWaves();
+</script>
+
+</main>
+</body>
+</html>

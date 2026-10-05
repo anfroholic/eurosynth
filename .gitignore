@@ -37,6 +37,9 @@ Thumbs.db
 # --- Claude Code machine-local settings (perms allowlist lives here) ---
 .claude/settings.local.json
 
+# --- machine-local env (holds this host's absolute PDK_ROOT; copy .env.example) ---
+.env
+
 # --- legacy PDK dir from the old Nix flow (kept ignored for old checkouts) ---
 gf180mcu/
 src/generated_defines.svh
